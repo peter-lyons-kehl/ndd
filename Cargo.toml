@@ -1,0 +1,17 @@
+[package]
+name = "ndd"
+version = "0.1.0"
+edition = "2024"
+
+license = "BSD-2-Clause OR Apache-2.0 OR MIT"
+rust-version = "1.85.0"
+
+authors = ["Peter Lyons Kehl<peter.kehl@gmail.com>"]
+description = "Non De-Duplicated cell. For statics that don't share memory with any other static/const."
+
+categories = ["concurrency", "data-structures", "no-std", "no-std::no-alloc", "rust-patterns"]
+
+keywords = ["data-structures", "initialization", "multi-threading ", "no-std", "once"]
+
+repository = "https://github.com/peter-lyons-kehl/ndd"
+homepage = "https://github.com/peter-lyons-kehl/ndd"
