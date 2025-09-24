@@ -36,7 +36,12 @@ Unlike `Cell` (and friends), `NonDeDuplicated` **does** implement
 [`core::marker::Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html) (if the inner
 data's type implements `Sync`, too). It can safely do so, because it never provides mutable access.
 That is similar to how
-[`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html) implements
-`Sync`, too.
+[`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E)
+implements `Sync`, too.
 
 See a test [`src/lib.rs` -> `addresses_unique_between_const_and_ndd()`](src/lib.rs).
+
+## Use cases
+
+Soon to be used in
+[`hash-injector::signal`](https://github.com/peter-lyons-kehl/hash-injector/blob/main/lib/src/signal.rs).
