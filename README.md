@@ -9,8 +9,10 @@ execution may be faster.
 However, that is counter-productive when the code identifies/compares `static` data by reference
 (whether a Rust reference/slice, or a pointer/pointer range). For example, an existing Rust/3rd
 party API may accept ("ordinary") references/slices. You may want to extend that API's
-protocol/behavior with special handling when the client sends in a designated `static` by
-reference/slice/pointer/pointer range.
+protocol/behavior with signalling/special handling when the client sends in a designated `static` by
+reference/slice/pointer/pointer range. Your special handler may cast such references/slices to
+pointers and compare them by address with
+[`core::ptr::eq`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html).
 
 But you don't want the client, nor the compiler/LLVM, to reuse/share the memory address of such a
 designated `static` for any other ("ordinary") `static` or `const` values/expressions. That does
