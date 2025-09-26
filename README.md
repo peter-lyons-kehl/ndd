@@ -1,4 +1,4 @@
-#  Non-De-Duplicated
+#  ndd (Non-De-Duplicated)
 
 ## Problem
 
@@ -27,7 +27,7 @@ value defined as `const`. See a test [`src/lib.rs` ->
 
 ## Solution
 
-`NonDeDuplicated` uses
+`ndd:NonDeDuplicated` uses
 [`core::cell::Cell`](https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html) to hold the data
 passed in by the user. The only access it gives to the inner data is through shared references.
 There is no mutation access. (If the inner data allows interior mutability, then it can't implement
@@ -39,11 +39,23 @@ Unlike `Cell` (and friends), `NonDeDuplicated` **does** implement
 data's type implements `Sync`, too). It can safely do so, because it never provides mutable access.
 That is similar to how
 [`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E)
-implements `Sync`, too.
+implements `Sync`, too - except that `.
 
 See a test [`src/lib.rs` -> `addresses_unique_between_const_and_ndd()`](src/lib.rs).
 
+## Compatiblity
+
+`ndd` doesn't need heap (`alloc`) and it's `no_std`-compatible. It compiles with `stable` Rust.
+
+## Quality
+
+Tested with
+
+- `cargo +stable test`, and
+- `cargo +nightly miri test` using [MIRI: Mid-level Intermediate Representation
+  Interpreter](https://github.com/rust-lang/miri).
+
 ## Use cases
 
-Soon to be used in
+Used by
 [`hash-injector::signal`](https://github.com/peter-lyons-kehl/hash-injector/blob/main/lib/src/signal.rs).
