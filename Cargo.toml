@@ -15,3 +15,12 @@ keywords = ["data-structures", "initialization", "multi-threading ", "no-std", "
 
 repository = "https://github.com/peter-lyons-kehl/ndd"
 homepage = "https://github.com/peter-lyons-kehl/ndd"
+
+[lints.rust]
+unexpected_cfgs = { level = "forbid"}
+
+[features]
+
+# Make Deref and From trait implementations const. This feature WILL be removed (and NOT just
+# deprecated) once Rust const traits are stabilized.
+const_convert = []

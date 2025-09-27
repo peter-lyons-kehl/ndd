@@ -30,7 +30,7 @@ value defined as `const`. See a test [`src/lib.rs` ->
 `ndd:NonDeDuplicated` uses
 [`core::cell::Cell`](https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html) to hold the data
 passed in by the user. The only access it gives to the inner data is through shared references.
-There is no mutation access. (If the inner data allows interior mutability, then it can't implement
+There is no mutation access. (If the inner data allows interior mutability, it can't implement
 [`core::marker::Send`](https://doc.rust-lang.org/nightly/core/marker/trait.Send.html), and then
 `NonDeDuplicated` doesn't implement `Send` either and it can't be stored in a `static`.)
 
@@ -39,21 +39,30 @@ Unlike `Cell` (and friends), `NonDeDuplicated` **does** implement
 data's type implements `Sync`, too). It can safely do so, because it never provides mutable access.
 That is similar to how
 [`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E)
-implements `Sync`, too - except that `.
+implements `Sync`, too.
 
 See a test [`src/lib.rs` -> `addresses_unique_between_const_and_ndd()`](src/lib.rs).
 
-## Compatiblity
+## Compatibility
 
-`ndd` doesn't need heap (`alloc`) and it's `no_std`-compatible. It compiles with `stable` Rust.
+`ndd` doesn't need heap (`alloc`) and it's `no_std`-compatible. It compiles with `stable` Rust, unless you need `const_deref` feature.
+
+### as_array_of_cells
+
+Since Rust version 1.92 (on/around December 11, 2025), `ndd::NonDeDuplicated` will have function
+`as_array_of_cells`, similar to Rust's `core::cell::Cell::as_array_of_cells` (which will become
+stable in 1.92). If you need this earlier, get in touch. (We prefer not to introduce a temporary
+cargo feature for this. Removing a feature later is a breaking change. And we don't want just to
+make such a feature no-op and let it sit around either.)
 
 ## Quality
 
-Tested with
+Tested with:
 
 - `cargo +stable test`, and
-- `cargo +nightly miri test` using [MIRI: Mid-level Intermediate Representation
-  Interpreter](https://github.com/rust-lang/miri).
+- using [MIRI](https://github.com/rust-lang/miri):
+  - `cargo +nightly miri test`
+  - `cargo +nightly miri test  --features=const_convert`.
 
 ## Use cases
 
