@@ -3,6 +3,7 @@
 #![cfg_attr(feature = "const_convert", feature(const_convert, const_trait_impl))]
 
 use core::cell::Cell;
+use core::hint;
 use core::ops::Deref;
 
 #[repr(transparent)]
@@ -13,7 +14,7 @@ pub struct NonDeDuplicated<T: ?Sized> {
 impl<T> NonDeDuplicated<T> {
     pub const fn new(data: T) -> Self {
         Self {
-            cell: Cell::new(data),
+            cell: Cell::new(hint::black_box(data)),
         }
     }
 
