@@ -24,7 +24,6 @@ impl<T> NonDeDuplicated<T> {
     }
 }
 
-#[deprecated = "function name may change"]
 impl<T> NonDeDuplicated<[T]> {
     pub const fn as_slice_of_cells(&self) -> &[NonDeDuplicated<T>] {
         unsafe { core::mem::transmute(self.cell.as_slice_of_cells()) }
@@ -55,13 +54,6 @@ macro_rules! impl_const_trait {
     };
 }
 
-/*impl<T> const Deref for NonDeDuplicated<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.get()
-    }
-}*/
 impl_const_trait! {Deref,
     type Target = T;
 
@@ -70,11 +62,6 @@ impl_const_trait! {Deref,
     }
 }
 
-/*impl<T> const From<T> for NonDeDuplicated<T> {
-    fn from(value: T) -> Self {
-        Self::new(value)
-    }
-}*/
 impl_const_trait! {From<T>,
     fn from(value: T) -> Self {
         Self::new(value)
@@ -99,14 +86,19 @@ mod tests {
     use super::*;
     use core::ptr;
 
-    type U8Array = [u8; 3];
-    const ARR_CONST: U8Array = [b'A', b'B', b'C'];
-    static ARR_STATIC_1: U8Array = [b'A', b'B', b'C'];
-    static ARR_STATIC_2: U8Array = [b'A', b'B', b'C'];
+    const fn expect_sync_ref<T: Sync>() {}
+    const fn expect_send_ref<T: Send>() {}
+    const _: () = expect_send_ref::<NonDeDuplicated<u8>>();
+    const _: () = expect_sync_ref::<NonDeDuplicated<u8>>();
+
+    type A = u8;
+    const A_CONST: A = b'A';
+    static A_STATIC_1: A = b'A';
+    static A_STATIC_2: A = b'A';
 
     #[test]
     fn addresses_unique_between_statics() {
-        assert!(!ptr::eq(&ARR_STATIC_1, &ARR_STATIC_2));
+        assert!(!ptr::eq(&A_STATIC_1, &A_STATIC_2));
     }
 
     fn _deref() -> &'static u8 {
@@ -117,6 +109,7 @@ mod tests {
     #[test]
     fn deref_of_copy_type() {
         static N: NonDeDuplicated<u8> = NonDeDuplicated::<u8>::new(0);
+
         let deref = &*N;
         let get = N.get();
         assert!(ptr::eq(deref, get));
@@ -125,18 +118,18 @@ mod tests {
     #[cfg(not(debug_assertions))]
     /// In release, [ARR_CONST] gets optimized away and points to the same address as
     /// [ARR_STATIC_1]!
-    #[should_panic(
-        expected = "assertion failed: !ptr::eq(&ARR_STATIC_1, &ARR_CONST)"
-    )]
+    #[should_panic(expected = "assertion failed: !ptr::eq(&ARR_STATIC_1, &ARR_CONST)")]
     #[test]
     fn addresses_not_unique_between_const_and_static() {
         assert!(!ptr::eq(&ARR_STATIC_1, &ARR_CONST));
     }
 
-    static ARR_NDD: NonDeDuplicated<U8Array> = NonDeDuplicated::new(ARR_CONST);
-    static ARR_NDD_REF: &'static U8Array = ARR_NDD.get();
+    static A_NDD: NonDeDuplicated<A> = NonDeDuplicated::new(A_CONST);
+    static A_NDD_REF: &'static A = A_NDD.get();
     #[test]
     fn addresses_unique_between_const_and_ndd() {
-        assert!(!ptr::eq(ARR_NDD_REF, &ARR_CONST));
+        assert!(!ptr::eq(A_NDD_REF, &A_CONST));
+        assert!(!ptr::eq(A_NDD_REF, &A_STATIC_1));
+        assert!(!ptr::eq(A_NDD_REF, &A_STATIC_2));
     }
 }
