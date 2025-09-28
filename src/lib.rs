@@ -68,13 +68,13 @@ impl_const_trait! {From<T>,
     }
 }
 
-/// For now, `Sync` requires that `T` is both `Sync` AND `Send`, following
+/// For now, [Sync] requires that `T` is both [Sync] AND [Send], following
 /// [std::sync::Mutex](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E).
 /// However, from https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html it seems that `T:
 /// Send` may be unnecessary? Please advise.
 ///
-/// Either way, NonDeDuplicated exists specifically for static "variables". Those get never moved
-/// out. So, unlike `std::sync::Mutex`, NonDeDuplicated doesn't need to implement `Send`.
+/// Either way, [NonDeDuplicated] exists specifically for static variables. Those get never moved
+/// out. So, unlike [std::sync::Mutex], [NonDeDuplicated] itself doesn't need to implement [Send].
 unsafe impl<T: ?Sized + Send + Sync> Sync for NonDeDuplicated<T> {}
 
 #[cfg(test)]
@@ -83,8 +83,6 @@ mod tests {
     use core::ptr;
 
     const fn expect_sync_ref<T: Sync>() {}
-    const fn expect_send_ref<T: Send>() {}
-    const _: () = expect_send_ref::<NonDeDuplicated<u8>>();
     const _: () = expect_sync_ref::<NonDeDuplicated<u8>>();
 
     type A = u8;
