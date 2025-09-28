@@ -68,10 +68,6 @@ impl_const_trait! {From<T>,
     }
 }
 
-// Automatic:
-//
-//unsafe impl<T: ?Sized + Send> Send for NonDeDuplicated<T> {}
-
 /// For now, `Sync` requires that `T` is both `Sync` AND `Send`, following
 /// [std::sync::Mutex](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E).
 /// However, from https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html it seems that `T:

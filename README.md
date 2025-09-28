@@ -30,14 +30,12 @@ value defined as `const`. See a test [`src/lib.rs` ->
 `ndd:NonDeDuplicated` uses
 [`core::cell::Cell`](https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html) to hold the data
 passed in by the user. The only access it gives to the inner data is through shared references.
-There is no mutation access. (If the inner data allows interior mutability, it can't implement
-[`core::marker::Send`](https://doc.rust-lang.org/nightly/core/marker/trait.Send.html), and then
-`NonDeDuplicated` doesn't implement `Send` either and it can't be stored in a `static`.)
+There is no mutation access.
 
 Unlike `Cell` (and friends), `NonDeDuplicated` **does** implement
 [`core::marker::Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html) (if the inner
-data's type implements `Sync`, too). It can safely do so, because it never provides mutable access.
-That is similar to how
+data's type implements `Sync`, too). It can safely do so, because it never provides mutable access,
+and it never mutates the inner data. That is similar to how
 [`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E)
 implements `Sync`, too.
 
