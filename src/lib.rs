@@ -34,7 +34,7 @@ impl<T> NonDeDuplicated<[T]> {
 
 impl<T, const N: usize> NonDeDuplicated<[T; N]> {
     pub const fn as_array_of_cells(&self) -> &[NonDeDuplicated<T>; N] {
-        unsafe { core::mem::transmute(self.cell.as_array_of_cells()) }
+        unsafe { mem::transmute(self.cell.as_array_of_cells()) }
     }
 }*/
 
@@ -97,6 +97,7 @@ unsafe impl<T: ?Sized + Send + Sync> Sync for NonDeDuplicated<T> {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::ptr;
 
     type U8Array = [u8; 3];
     const ARR_CONST: U8Array = [b'A', b'B', b'C'];
@@ -105,30 +106,37 @@ mod tests {
 
     #[test]
     fn addresses_unique_between_statics() {
-        assert!(!core::ptr::eq(
-            (&ARR_STATIC_1).as_ptr(),
-            (&ARR_STATIC_2).as_ptr()
-        ));
+        assert!(!ptr::eq(&ARR_STATIC_1, &ARR_STATIC_2));
+    }
+
+    fn _deref() -> &'static u8 {
+        static N: NonDeDuplicated<u8> = NonDeDuplicated::<u8>::new(0);
+        &*N
+    }
+
+    #[test]
+    fn deref_of_copy_type() {
+        static N: NonDeDuplicated<u8> = NonDeDuplicated::<u8>::new(0);
+        let deref = &*N;
+        let get = N.get();
+        assert!(ptr::eq(deref, get));
     }
 
     #[cfg(not(debug_assertions))]
     /// In release, [ARR_CONST] gets optimized away and points to the same address as
     /// [ARR_STATIC_1]!
     #[should_panic(
-        expected = "assertion failed: !core::ptr::eq((&ARR_STATIC_1).as_ptr(), (&ARR_CONST).as_ptr())"
+        expected = "assertion failed: !ptr::eq(&ARR_STATIC_1, &ARR_CONST)"
     )]
     #[test]
     fn addresses_not_unique_between_const_and_static() {
-        assert!(!core::ptr::eq(
-            (&ARR_STATIC_1).as_ptr(),
-            (&ARR_CONST).as_ptr()
-        ));
+        assert!(!ptr::eq(&ARR_STATIC_1, &ARR_CONST));
     }
 
     static ARR_NDD: NonDeDuplicated<U8Array> = NonDeDuplicated::new(ARR_CONST);
     static ARR_NDD_REF: &'static U8Array = ARR_NDD.get();
     #[test]
     fn addresses_unique_between_const_and_ndd() {
-        assert!(!core::ptr::eq(ARR_NDD_REF.as_ptr(), (&ARR_CONST).as_ptr()));
+        assert!(!ptr::eq(ARR_NDD_REF, &ARR_CONST));
     }
 }
