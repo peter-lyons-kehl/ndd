@@ -109,13 +109,13 @@ mod tests {
         assert!(ptr::eq(deref, get));
     }
 
-    #[cfg(not(debug_assertions))]
+    #[cfg(not(any(debug_assertions, miri)))]
     /// In release, [ARR_CONST] gets optimized away and points to the same address as
     /// [ARR_STATIC_1]!
-    #[should_panic(expected = "assertion failed: !ptr::eq(&ARR_STATIC_1, &ARR_CONST)")]
+    #[should_panic(expected = "assertion failed: !ptr::eq(&A_STATIC_1, &A_CONST)")]
     #[test]
     fn addresses_not_unique_between_const_and_static() {
-        assert!(!ptr::eq(&ARR_STATIC_1, &ARR_CONST));
+        assert!(!ptr::eq(&A_STATIC_1, &A_CONST));
     }
 
     static A_NDD: NonDeDuplicated<A> = NonDeDuplicated::new(A_CONST);

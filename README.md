@@ -6,24 +6,24 @@ Rust (or, rather, LLVM) by default de-duplicates or reuses `static` data and its
 purposes that is good: The result binary is smaller, and because of more successful cache hits the
 execution may be faster.
 
-However, that is counter-productive when the code identifies/compares `static` data by reference
-(whether a Rust reference/slice, or a pointer/pointer range). For example, an existing Rust/3rd
-party API may accept ("ordinary") references/slices. You may want to extend that API's
-protocol/behavior with signalling/special handling when the client sends in a designated `static` by
-reference/slice/pointer/pointer range. Your special handler may cast such references/slices to
-pointers and compare them by address with
-[`core::ptr::eq`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html).
+However, that is counter-productive when the code identifies/compares `static` data by memory
+address of the reference (whether a Rust reference/slice, or a pointer/pointer range). For example,
+an existing Rust/3rd party API may accept ("ordinary") references/slices. You may want to extend
+that API's protocol/behavior with signalling/special handling when the client sends in your
+designated `static` variable by reference/slice/pointer/pointer range. (Your special handler may
+cast such references/slices to pointers and compare them by address with
+[`core::ptr::eq`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html).)
 
-But you don't want the client, nor the compiler/LLVM, to reuse/share the memory address of such a
+You don't want the client, nor the compiler/LLVM, to reuse/share the memory address of such a
 designated `static` for any other ("ordinary") `static` or `const` values/expressions. That does
-work out of the box when the client passes a reference/slice defined as `static`: It seems that
-(with the default `release` optimizations) each static gets its own memory space. See a test
-[`src/lib.rs` -> `addresses_unique_between_statics()`](src/lib.rs).
+work out of the box when the client passes a reference/slice defined as `static`: (even with the
+default `release` optimizations) each static gets its own memory space. See a test [`src/lib.rs` ->
+`addresses_unique_between_statics()`](https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L94).
 
 However, it is a problem (in release mode) with ("ordinary") `const` values/expressions that equal
 in value to the designated `static`. Rust/LLVM uses the `static` address for references to the same
 value defined as `const`. See a test [`src/lib.rs` ->
-`addresses_not_unique_between_const_and_static()`](src/lib.rs).
+`addresses_not_unique_between_const_and_static()`](src/lib.rs). And those `const` in 3rd part code!
 
 ## Solution
 
@@ -43,22 +43,29 @@ See a test [`src/lib.rs` -> `addresses_unique_between_const_and_ndd()`](src/lib.
 
 ## Compatibility
 
-`ndd` doesn't need heap (`alloc`) and it's `no_std`-compatible. It compiles with `stable` Rust, unless you need `const_deref` feature.
+`ndd` doesn't need heap (`alloc`) and it's `no_std`-compatible. It compiles with `stable` Rust,
+unless you need `const_deref` feature.
+
+Since December 11, 2025 `ndd` will require Rust 1.92 (which will stabilize around then).
 
 ### as_array_of_cells
 
 Since Rust version 1.92 (on/around December 11, 2025), `ndd::NonDeDuplicated` will have function
 `as_array_of_cells`, similar to Rust's `core::cell::Cell::as_array_of_cells` (which will become
-stable in 1.92). If you need this earlier, get in touch. (We prefer not to introduce a temporary
-cargo feature for this. Removing a feature later is a breaking change. And we don't want just to
-make such a feature no-op and let it sit around either.)
+stable in 1.92). If you need this earlier, get in touch.
+
+(We prefer not to introduce a temporary cargo feature for this. Removing a feature later is a
+breaking change. And we don't want just to make such a feature no-op and let it sit around either.)
 
 ## Quality
 
 Tested with:
 
-- `cargo +stable test`, and
-- using [MIRI](https://github.com/rust-lang/miri):
+- `cargo +stable test`,
+- `cargo +stable test --release`,
+- `cargo +nightly test  --features=const_convert`
+- `cargo +nightly test  --features=const_convert --release`
+- with [MIRI](https://github.com/rust-lang/miri):
   - `cargo +nightly miri test`
   - `cargo +nightly miri test  --features=const_convert`.
 
