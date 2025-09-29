@@ -125,7 +125,7 @@ Checked and tested (also with [MIRI](https://github.com/rust-lang/miri)):
   - `cargo +stable test --release`
   - `cargo +nightly miri test`
 - `nightly` stream:
-  - `cargo clippy`
+  - `cargo +nightly clippy --ignore-rust-version`
   - `cargo +nightly test  --ignore-rust-version`
   - `cargo +nightly test  --ignore-rust-version --release`
   - `cargo +nightly miri test --ignore-rust-version`
