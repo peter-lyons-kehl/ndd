@@ -12,35 +12,36 @@ an existing Rust/3rd party API may accept ("ordinary") references/slices. You ma
 that API's protocol/behavior with signalling/special handling when the client sends in your
 designated `static` variable by reference/slice/pointer/pointer range. (Your special handler may
 cast such references/slices to pointers and compare them by address with
-[`core::ptr::eq`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html).)
+[`core::ptr::eq()`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html).)
 
 You don't want the client, nor the compiler/LLVM, to reuse/share the memory address of such a
 designated `static` for any other ("ordinary") `static` or `const` values/expressions. That does
 work out of the box when the client passes a reference/slice defined as `static`: (even with the
 default `release` optimizations) each static gets its own memory space. See a test [`src/lib.rs` ->
-`addresses_unique_between_statics()`]().
+`addresses_unique_between_statics()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L72).
 
 However, it is a problem (in release mode) with ("ordinary") `const` values/expressions that equal
 in value to the designated `static`. Rust/LLVM uses one matching `static`'s address for references
-to the same value defined as `const`. See a test [`src/lib.rs` ->
-`addresses_not_unique_between_const_and_static()`](src/lib.rs). And such `const` definitions could
-be in 3rd party (innocent) code!
+to equal value(s) defined as `const`. See a test [`src/lib.rs` ->
+`addresses_not_unique_between_const_and_static()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L95).
+And such `const` definitions could even be in 3rd party (innocent) code!
 
 ## Solution
 
 `ndd:NonDeDuplicated` uses
 [`core::cell::Cell`](https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html) to hold the data
-passed in by the user. The only access it gives to the inner data is through shared references.
-There is no mutation access.
+passed in by the user. There is no mutation and no mutation access. The only access it gives to the
+inner data is through shared references.
 
 Unlike `Cell` (and friends), `NonDeDuplicated` **does** implement
 [`core::marker::Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html) (if the inner
-data's type implements `Sync`, too). It can safely do so, because it never provides mutable access,
-and it never mutates the inner data. That is similar to how
+data's type implements `Send` and  `Sync`). It can safely do so, because it never provides mutable
+access, and it never mutates the inner data. That is similar to how
 [`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E)
 implements `Sync`, too.
 
-See a test [`src/lib.rs` -> `addresses_unique_between_const_and_ndd()`](src/lib.rs).
+See a test [`src/lib.rs` ->
+`addresses_unique_between_const_and_ndd()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L102).
 
 ## Compatibility
 
@@ -52,7 +53,7 @@ Optionally, you can get `nightly` functionality.
 `ndd` is planned to be always below version `1.0`. That allows you to specify it as a dependency
 with version `0.*`. Then you get the newest version available for your Rust automatically.
 
-## Future/nightly functionality
+## nightly functionality
 
 We prefer not to introduce temporary cargo features. Removing a feature later is a breaking change.
 And we don't want just to make such a feature no-op and let it sit around either.
@@ -89,7 +90,8 @@ There does not seem to be a way to specify `--ignore-rust-version` (or an equiva
 [manifest](https://doc.rust-lang.org/nightly/cargo/reference/manifest.html),
 [build-scripts](https://doc.rust-lang.org/nightly/cargo/reference/build-scripts.html) and
 [config.toml](https://doc.rust-lang.org/nightly/cargo/reference/config.html)). That may be a GOOD
-thing: It requires the top level crate/workspace maintainer to acknowledge that it's non-standard.
+thing: It requires the top level crate/workspace maintainer to acknowledge that the API is not
+stable.
 
 ### as_slice_of_cells
 
@@ -105,13 +107,14 @@ With `nightly` Rust toolchain and use of `--ignore-rust-version` you can get
 `const`. As of mid 2025, `const` traits are having high traction in Rust. Hopefully this will be
 stable not in years, but sooner.
 
-# Streams and versions
+## Streams and versions
 
 - Odd major versions (`0.1`, `0.3`...) are for `nightly` functionality. They require
   `--ignore-rust-version` (example below).
 - Even major versions (`0.2`, `0.4`...) are for `stable` functionality.
 
-Always specify `ndd` with version `0.*`, and you will get the newest available for `stable`.
+Always specify `ndd` with version `0.*`. Then you will get the newest available for `stable`, and
+your libraries will work with any newer `ndd`, too.
 
 ## Quality
 
@@ -135,4 +138,4 @@ Used by
 ## Updates
 
 Please subscribe for low frequency updates at
-[#1](https://github.com/peter-lyons-kehl/ndd/issues/2).
+[#2](https://github.com/peter-lyons-kehl/ndd/issues/2).
