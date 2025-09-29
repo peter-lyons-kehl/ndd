@@ -1,60 +1,38 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(test), no_std)]
-#![cfg_attr(feature = "const_convert", feature(const_convert, const_trait_impl))]
+//#![cfg_attr(feature = "const_convert", feature(const_convert, const_trait_impl))]
 
 use core::cell::Cell;
-use core::hint;
 use core::ops::Deref;
 
+/// A zero-cost  wrapper guaranteed not to share its memory location with any other valid (in-scope)
+/// variable (even `const` equal to the inner value). Use for `static` variables that have their
+/// addresses compared with [core::ptr::eq].
+///
+/// It has same size, layout and alignment as type parameter `T`.
 #[repr(transparent)]
 pub struct NonDeDuplicated<T: ?Sized> {
     cell: Cell<T>,
 }
 
 impl<T> NonDeDuplicated<T> {
-    pub const fn new(data: T) -> Self {
+    /// Construct a new instance.
+    pub const fn new(value: T) -> Self {
         Self {
-            cell: Cell::new(hint::black_box(data)),
+            //Using core::hint::black_box() seems unnecessary.
+            //cell: Cell::new(core::hint::black_box(data)),
+            cell: Cell::new(value),
         }
     }
 
+    /// Get a reference.
     pub const fn get(&self) -> &T {
         let ptr = self.cell.as_ptr();
         unsafe { &*ptr }
     }
 }
 
-impl<T> NonDeDuplicated<[T]> {
-    pub const fn as_slice_of_cells(&self) -> &[NonDeDuplicated<T>] {
-        unsafe { core::mem::transmute(self.cell.as_slice_of_cells()) }
-    }
-}
-/* TODO Since Rust 1.92:
-
-impl<T, const N: usize> NonDeDuplicated<[T; N]> {
-    pub const fn as_array_of_cells(&self) -> &[NonDeDuplicated<T>; N] {
-        unsafe { mem::transmute(self.cell.as_array_of_cells()) }
-    }
-}*/
-
-#[cfg(feature = "const_convert")]
-macro_rules! impl_const_trait {
-    ($trait_name:ty, $( $body:item )+) => {
-        impl<T> const $trait_name for $crate::NonDeDuplicated<T> {
-            $( $body )+
-        }
-    };
-}
-#[cfg(not(feature = "const_convert"))]
-macro_rules! impl_const_trait {
-    ($trait_name:ty, $( $body:item )+) => {
-        impl<T> $trait_name for $crate::NonDeDuplicated<T> {
-            $( $body )+
-        }
-    };
-}
-
-impl_const_trait! {Deref,
+impl<T> Deref for NonDeDuplicated<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -62,7 +40,7 @@ impl_const_trait! {Deref,
     }
 }
 
-impl_const_trait! {From<T>,
+impl<T> From<T> for NonDeDuplicated<T> {
     fn from(value: T) -> Self {
         Self::new(value)
     }
