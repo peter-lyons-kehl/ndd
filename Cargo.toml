@@ -14,7 +14,7 @@ description = "Non De-Duplicated cell. For statics that don't share memory with 
 
 categories = ["concurrency", "data-structures", "no-std", "no-std::no-alloc", "rust-patterns"]
 
-keywords = ["data-structures", "initialization", "multi-threading ", "no-std", "once"]
+keywords = ["data-structures", "initialization", "multi-threading", "no-std", "once"]
 
 repository = "https://github.com/peter-lyons-kehl/ndd"
 homepage = "https://github.com/peter-lyons-kehl/ndd"
