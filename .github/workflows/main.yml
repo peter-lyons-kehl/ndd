@@ -11,6 +11,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run validate-version.sh
-        run: ./validate-version.sh
+      - name: Run pre-commit
+        run: ./pre-commit
         shell: bash
