@@ -1,0 +1,25 @@
+#!/usr/bin/bash
+
+# The "version" field get validated by cargo:
+# - it must have three numeric parts
+# - it must not start with leading zero(s).
+#
+# That simplifies the following regexes.
+
+grep -qE '^ *version *= *"[1-9][0-9]*.[^"]*"' Cargo.toml
+if [ $? -eq 0 ]; then
+    echo Prevent non-zero leftmost version part. All versions have to be below 1.0.
+    exit 1
+fi
+
+grep -qE '^ *version *= *"0\.[0-9]*[02468]\.[0-9]*-.*"' Cargo.toml
+if [ $? -eq 0 ]; then
+    echo "Prevent even-numbered major (stable) versions to have a pre-release postfix like `-nightly`."
+    exit 1
+fi
+
+grep -qE '^ *version *= *"0\.[0-9]*[13579]\.[0-9]+"' Cargo.toml
+if [ $? -eq 0 ]; then
+    echo "Require odd-numbered major (nightly) versions to have a pre-release postfix like `-nightly`."
+    exit 1
+fi
