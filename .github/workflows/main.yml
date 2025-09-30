@@ -1,10 +1,16 @@
-name: My Workflow
-    on: [push]
-    jobs:
-      build:
-        runs-on: ubuntu-latest
-        steps:
-          - uses: actions/checkout@v4 # Checkout the repository
-          - name: Run crate version validation
-            run: ./validate-version.sh
-            shell: bash
+name: Validate Version
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run validate-version.sh
+        run: ./validate-version.sh
+        shell: bash
