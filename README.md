@@ -130,11 +130,12 @@ So, instead, any `nightly`-only functionality is in separate version stream(s) t
   
 So a `stable` (**non**-pre-release) version will NOT match/auto-update to a **pre-release** version
 on its own. Therefore, if your crate and its dependencies specify `ndd` version as `0.*`, they will
-**not** accidentally request **odd**-numbered major (`-nightly`) on their own. They would get
+**not** accidentally request **odd**-numbered major (`-nightly`) on their own. They would get a
 (`-nightly`) version only if another crate requires it - but that's up to the consumer.
 
-If you want more control over `stable` versions, you can specify the **even**-numbered version mask,
-like `0.2.*`. But then you lose automatic major updates.
+If you want more control over `stable` versions, you can specify the **even**-numbered major version
+with an asterisk mask for the minor version, like `0.2.*`. But then you lose automatic major
+updates.
 
 ### Nightly functionality
 
