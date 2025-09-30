@@ -1,5 +1,10 @@
 # ndd (Non-De-Duplicated)
 
+## Summary
+
+Zero-cost transparent wrapper. Use when comparing `static` references/slices/pointers by address.
+For `static` variables guaranteed not to share memory with any other `static` or `const`.
+
 ## Problem
 
 Rust (or, rather, LLVM) by default de-duplicates or reuses `static` data and its parts. For most
@@ -45,61 +50,108 @@ See a test [`src/lib.rs` ->
 
 ## Compatibility
 
-`ndd` doesn't need heap (`alloc`) and it's `no_std`-compatible. It compiles with `stable` Rust.
-Optionally, you can get `nightly` functionality.
+`ndd` is `no_std`-compatible and it doesn't need heap (`alloc`) either. Release versions
+(**even**-numbered major versions, and **not** `-nightly` pre-releases) compile with `stable` Rust.
+(More below).
 
-### Forward compatible
+### Stable is always forward compatible
 
 `ndd` is planned to be always below version `1.0`. That allows you to specify it as a dependency
-with version `0.*`. Then you get the newest version available for your Rust automatically.
+with version `0.*` (which is **not** possible for `1.0` and higher). That will match the newest
+(**even**-numbered major) stable version (available for your Rust) automatically.
 
-## nightly functionality
+### Stable and nightly
+
+Versioning convention:
+
+- **Even**-numbered major versions (`0.2`, `0.4`...)
+  - are for `stable` functionality only.
+  - don't use any pre-release identifier (so, nothing like `0.4-alpha`).
+- **Odd**-numbered major versions (`0.3`, `0.5`...)
+  - are, indeed, for `nightly` (unstable) functionality, and need `nightly` Rust toolchain.
+  - always contain `-nightly` (pre-release identifier) in their name.
+  - include functionality already present in lower stable versions with the numeric version lower by
+    (major) `1`.
+
+    So if `z = x + 1` then
+    - `0.x.y` (stable) and
+    - `0.z.y-nightly`
+    
+    then `0.z.y-nightly` includes all functionality already present in `0.x.y` (stable).
+    
+    Examples:
+    - `0.2.1` (stable) and
+    - `0.3.1-nightly`
+      - `0.3.1-nightly` includes functionality present in `0.2.1` (stable).
+    - `0.2.2` (stable) and
+    - `0.3.2-nightly`
+      - `0.3.2-nightly` includes functionality present in `0.2.2` (if they get published), **BUT:**
+    - `0.2.1` (stable) and
+    - `0.3.1-nightly`
+      - `0.3.1-nightly` will **not** include functionality present in `0.2.2` that was not present
+        in `0.2.1`.
+- If needed and if practical, new major versions will use [the SemVer
+  trick](https://github.com/dtolnay/semver-trick). See also [The Cargo Book > Dependency
+  Resolution](https://rustwiki.org/en/cargo/reference/resolver.html#version-incompatibility-hazards).
+  
+  However, `ndd`'s only exported type is `ndd::NonDeDuplicated`. It is a zero-cost wrapper suitable
+  for immutable `static` variables. It is **not** intended for function parameters, local variables
+  or as a composite type (if you do have such a use case, please get in touch).
+  
+  Since `ndd::NonDeDuplicated` is not being passed around, and its functions can get
+  inlined/optimized away, there shouldn't be any big binary size/speed or usability difference if
+  there happen to be multiple major versions of `ndd` in use at the same time. So SemVer trick may
+  be unnecessary.
+
+Rule of thumb: On `stable` Rust, always specify `ndd` with version `0.*`. Then, automatically
+
+- you will get the newest available even-numbered major (`stable`) version, and
+- your libraries will work with any newer odd-numbered major (`-nightly`) version of `ndd`, too, if
+  any dependency (direct or transitive) requires it.
+
+### Nightly
 
 We prefer not to introduce temporary cargo features. Removing a feature later is a breaking change.
-And we don't want just to make such a feature no-op and let it sit around either.
+And we don't want just to make such a feature no-op and let it sit around.
 
-So, instead:
+So, instead, any `nightly`-only functionality is in separate version stream(s) that always
 
-- any functionality depending on `nightly` features known to be stabilized soon at a certain Rust
-  version will have `rust-version` set so. They will be automatically available once that Rust
-  version becomes stable. Until then they will be available for `nightly`.
-- any functionality depending on `nightly` features with no certain stabilization version will have
-  `rust-version` set to FAR in the future (`1.9999.x` for now, where `x` reflects the
-  existing/planned `1.x` Rust). You can use it by passing `--ignore-rust-version` to `cargo` (see
-  [The Cargo Book >
-  rust-vesion](https://doc.rust-lang.org/nightly/cargo/reference/rust-version.html)).
+- use **odd**-numbered major version numbers (`0.3.x`, `0.5.x`...), so if requested explicitly
+  (rather than with `0.*`), they
+  - will **not** auto-update to/match even-numbered major (`stable`) versions, and
+  - will **not** auto-update to/match higher major versions (whether odd or even) either; and
+- are **pre-releases** (as per [The Cargo Book > Specifying Dependencies >
+  Pre-releases](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#pre-releases)
+  and [The Cargo Book > The Manifest Format > The version
+  field](https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-version-field))
+  containing `-nightly` in their name.
+  
+  If (by accident) there were a stable version with the same (**odd**-numbered) major number (or the
+  same full numeric prefix) without a pre-release identifier, a stable (**non**-pre-release) version
+  will NOT match/auto-update to a pre-release version on its own. So, if your crate and its
+  dependencies use an even-numbered major (`stable`) version, they will not accidentally request
+  `-nightly` on their own. They would use odd-numbered major (`-nightly`) version only if any other
+  crate requires it - but that's up to the consumer.
 
-### as_array_of_cells
+### Nightly functionality
 
-Hopefully, since Rust version 1.91 (on/around October 30, 2025), `ndd::NonDeDuplicated` will have
-function `as_array_of_cells`, similar to Rust's
+Functionality of odd-numbered major (`-nightly`) versions is always subject to change.
+
+The following extra functionality is available on `0.3.1-nightly`:
+
+#### as_array_of_cells
+
+`ndd::NonDeDuplicated` has function `as_array_of_cells`, similar to Rust's
 [`core::cell::Cell::as_array_of_cells`](https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.as_array_of_cells)
-(which will become stable in 1.91). If you need this functionality earlier, use `nightly` and
-`--ignore-rust-version`.
+(which will, hopefully, become stable in 1.91).
 
-If using `--ignore-rust-version` is risky, we can set up a nightly-compatible GIT branch, and you
-could import it following [The Cargo Book > Specifying dependencies from git repositories > Choice
-of
-commit](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#choice-of-commit).
-If that seems difficult, or if you want to publish your crate on crates.io, get in touch.
+#### as_slice_of_cells
 
-There does not seem to be a way to specify `--ignore-rust-version` (or an equivalent) in
-`Cargo.toml`, `config.toml`, `build.rs` or through environment variables (Cargo Book >
-[rust-version](https://doc.rust-lang.org/nightly/cargo/reference/rust-version.html),
-[environment-variables](https://doc.rust-lang.org/nightly/cargo/reference/environment-variables.html),
-[manifest](https://doc.rust-lang.org/nightly/cargo/reference/manifest.html),
-[build-scripts](https://doc.rust-lang.org/nightly/cargo/reference/build-scripts.html) and
-[config.toml](https://doc.rust-lang.org/nightly/cargo/reference/config.html)). That may be a GOOD
-thing: It requires the top level crate/workspace maintainer to acknowledge that the API is not
-stable.
+Similar to `as_array_of_cells`, `ndd::NonDeDuplicated` has function `as_slice_of_cells`. That
+**can** be stable with with Rust `1.88`+. However, to simplify versioning, it's bundled in
+`-nightly` together with `as_array_of_cells`. If you need it earlier, get in touch.
 
-### as_slice_of_cells
-
-Similar to `as_array_of_cells`, function `as_slice_of_cells` can be implemented with Rust `1.88`.
-However, to simplify versioning, it's planned to go together with `as_array_of_cells`. If you need
-it earlier, get in touch.
-
-### const Deref and From
+#### const Deref and From
 
 With `nightly` Rust toolchain and use of `--ignore-rust-version` you can get
 [core::ops::Deref](https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html) and
@@ -107,28 +159,13 @@ With `nightly` Rust toolchain and use of `--ignore-rust-version` you can get
 `const`. As of mid 2025, `const` traits are having high traction in Rust. Hopefully this will be
 stable not in years, but sooner.
 
-## Streams and versions
-
-- Odd major versions (`0.1`, `0.3`...) are for `nightly` functionality. They require
-  `--ignore-rust-version` (example below).
-- Even major versions (`0.2`, `0.4`...) are for `stable` functionality.
-
-Always specify `ndd` with version `0.*`. Then you will get the newest available for `stable`, and
-your libraries will work with any newer `ndd`, too.
-
 ## Quality
 
 Checked and tested (also with [MIRI](https://github.com/rust-lang/miri)):
-- `stable` stream:
-  - `cargo clippy`
-  - `cargo +stable test`
-  - `cargo +stable test --release`
-  - `cargo +nightly miri test`
-- `nightly` stream:
-  - `cargo +nightly clippy --ignore-rust-version`
-  - `cargo +nightly test  --ignore-rust-version`
-  - `cargo +nightly test  --ignore-rust-version --release`
-  - `cargo +nightly miri test --ignore-rust-version`
+- `cargo clippy`
+- `cargo test`
+- `cargo test --release`
+- `cargo +nightly miri test`
 
 ## Use cases
 

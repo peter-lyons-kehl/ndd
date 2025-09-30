@@ -1,16 +1,15 @@
 [package]
 name = "ndd"
-version = "0.1.0"
+version = "0.2.1"
 edition = "2024"
 
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
 
-# Borrowing a pointer-based reference &*ptr is const only since Rust 1.86.
-#
-rust-version = "1.9999.86"
+# - Borrowing a pointer-based reference &*ptr is const only since Rust 1.86.
+rust-version = "1.86"
 
 authors = ["Peter Lyons Kehl<peter.kehl@gmail.com>"]
-description = "Non De-Duplicated cell. For statics that don't share memory with any other static/const."
+description = "Non De-Duplicated cell. For statics guaranteed not to share memory with any other static/const."
 
 categories = ["concurrency", "data-structures", "no-std", "no-std::no-alloc", "rust-patterns"]
 

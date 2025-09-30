@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(test), no_std)]
-#![feature(const_convert, const_trait_impl)]
 
 use core::cell::Cell;
 use core::ops::Deref;
@@ -32,7 +31,7 @@ impl<T> NonDeDuplicated<T> {
     }
 }
 
-impl<T> const Deref for NonDeDuplicated<T> {
+impl<T> Deref for NonDeDuplicated<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -40,21 +39,9 @@ impl<T> const Deref for NonDeDuplicated<T> {
     }
 }
 
-impl<T> const From<T> for NonDeDuplicated<T> {
+impl<T> From<T> for NonDeDuplicated<T> {
     fn from(value: T) -> Self {
         Self::new(value)
-    }
-}
-
-impl<T> NonDeDuplicated<[T]> {
-    pub const fn as_slice_of_cells(&self) -> &[NonDeDuplicated<T>] {
-        unsafe { core::mem::transmute(self.cell.as_slice_of_cells()) }
-    }
-}
-
-impl<T, const N: usize> NonDeDuplicated<[T; N]> {
-    pub const fn as_array_of_cells(&self) -> &[NonDeDuplicated<T>; N] {
-        unsafe { core::mem::transmute(self.cell.as_array_of_cells()) }
     }
 }
 
