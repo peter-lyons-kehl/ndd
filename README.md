@@ -116,22 +116,25 @@ And we don't want just to make such a feature no-op and let it sit around.
 
 So, instead, any `nightly`-only functionality is in separate version stream(s) that always
 
-- use **odd**-numbered major version numbers (`0.3.x`, `0.5.x`...), so if requested explicitly
-  (rather than with `0.*`), they
-  - will **not** auto-update to/match even-numbered major (`stable`) versions, and
-  - will **not** auto-update to/match higher major versions (whether odd or even) either; and
 - are **pre-releases** (as per [The Cargo Book > Specifying Dependencies >
   Pre-releases](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#pre-releases)
   and [The Cargo Book > The Manifest Format > The version
   field](https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-version-field))
   containing `-nightly` in their name.
+- use **odd**-numbered major version numbers (`0.3.x`, `0.5.x`...). And, because they are always
+  **pre-releases**, their version has to be specified including the pre-release identifier
+  `-nightly`. So, **unlike** odd-numbered major (`stable`) versions, `-nightly` versions they
+  **cannot** be matched with `0.*`. Therefore they
+  - will **not** match/auto-update to even-numbered major (`stable`) versions, and
+  - will **not** match/auto-update to higher major versions (whether odd or even) either.
   
-  If (by accident) there were a stable version with the same (**odd**-numbered) major number (or the
-  same full numeric prefix) without a pre-release identifier, a stable (**non**-pre-release) version
-  will NOT match/auto-update to a pre-release version on its own. So, if your crate and its
-  dependencies use an even-numbered major (`stable`) version, they will not accidentally request
-  `-nightly` on their own. They would use odd-numbered major (`-nightly`) version only if any other
-  crate requires it - but that's up to the consumer.
+So a `stable` (**non**-pre-release) version will NOT match/auto-update to a **pre-release** version
+on its own. Therefore, if your crate and its dependencies specify `ndd` version as `0.*`, they will
+**not** accidentally request **odd**-numbered major (`-nightly`) on their own. They would get
+(`-nightly`) version only if another crate requires it - but that's up to the consumer.
+
+If you want more control over `stable` versions, you can specify the **even**-numbered version mask,
+like `0.2.*`. But then you lose automatic major updates.
 
 ### Nightly functionality
 
