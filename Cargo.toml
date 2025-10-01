@@ -1,6 +1,6 @@
 [package]
 name = "ndd"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
