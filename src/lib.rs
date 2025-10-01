@@ -46,12 +46,6 @@ impl<T> const From<T> for NonDeDuplicated<T> {
     }
 }
 
-impl<T> NonDeDuplicated<[T]> {
-    pub const fn as_slice_of_cells(&self) -> &[NonDeDuplicated<T>] {
-        unsafe { core::mem::transmute(self.cell.as_slice_of_cells()) }
-    }
-}
-
 impl<T, const N: usize> NonDeDuplicated<[T; N]> {
     pub const fn as_array_of_cells(&self) -> &[NonDeDuplicated<T>; N] {
         unsafe { core::mem::transmute(self.cell.as_array_of_cells()) }
