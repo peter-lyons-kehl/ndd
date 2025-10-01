@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.3
+
+- Validation: For `static` variables only. Dropping `ndd::NonDeDuplicated` in debug build panics.
+- New tests.
+- Documentation: `nightly`, quality,
+- Versioning scheme validation: GitHub Actions.
+- Versioning scheme validation: local GIT pre-commit hook.
+
+## 0.2.2
+
+Documentation.
+
 ## 0.2.1
 
 Documentation.

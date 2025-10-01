@@ -10,7 +10,7 @@ use core::ops::Deref;
 ///
 /// It has same size, layout and alignment as type parameter `T`.
 #[repr(transparent)]
-pub struct NonDeDuplicated<T: ?Sized> {
+pub struct NonDeDuplicated<T> {
     cell: Cell<T>,
 }
 
@@ -52,7 +52,18 @@ impl<T> From<T> for NonDeDuplicated<T> {
 ///
 /// Either way, [NonDeDuplicated] exists specifically for static variables. Those get never moved
 /// out. So, unlike [std::sync::Mutex], [NonDeDuplicated] itself doesn't need to implement [Send].
-unsafe impl<T: ?Sized + Send + Sync> Sync for NonDeDuplicated<T> {}
+unsafe impl<T: Send + Sync> Sync for NonDeDuplicated<T> {}
+
+/// [NonDeDuplicated] is intended for `static` (immutable) variables only. So [Drop::drop] panics in
+/// debug builds.
+impl<T> Drop for NonDeDuplicated<T> {
+    fn drop(&mut self) {
+        // If the client uses Box::leak() or friends, then drop() will NOT happen. That is OK: A
+        // leaked reference will have static lifetime.
+        #[cfg(debug_assertions)]
+        panic!("Do not use for local variables or on heap. Use for static variables only.")
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -66,6 +77,21 @@ mod tests {
     const A_CONST: A = b'A';
     static A_STATIC_1: A = b'A';
     static A_STATIC_2: A = b'A';
+
+    #[cfg(any(debug_assertions, miri))]
+    #[should_panic(
+        expected = "Do not use for local variables or on heap. Use for static variables only."
+    )]
+    #[test]
+    fn drop_panics_in_debug() {
+        let _: NonDeDuplicated<()> = ().into();
+    }
+
+    #[cfg(not(any(debug_assertions, miri)))]
+    #[test]
+    fn drop_silent_in_release() {
+        let _: NonDeDuplicated<()> = ().into();
+    }
 
     #[test]
     fn addresses_unique_between_statics() {
