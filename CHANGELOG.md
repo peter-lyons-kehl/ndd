@@ -1,10 +1,22 @@
 # Changelog
 
+## 0.2.3 and 0.3.3-nightly
+
+- Validation: For `static` variables only. Dropping `ndd::NonDeDuplicated` in debug build panics.
+- New tests.
+- Documentation: `nightly`, quality,
+- Versioning scheme validation: GitHub Actions.
+- Versioning scheme validation: local GIT pre-commit hook.
+
 ## 0.3.1-nightly
 
 - `const` impl of `Deref` and `From`.
 - `as_slice_of_cells`
 - `as_array_of_cells`
+
+## 0.2.2
+
+Documentation.
 
 ## 0.2.1
 

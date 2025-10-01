@@ -48,45 +48,66 @@ implements `Sync`, too.
 See a test [`src/lib.rs` ->
 `addresses_unique_between_const_and_ndd()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L102).
 
+## Use
+
+Use `ndd::NonDeDuplicated` to wrap your static data. Use it for (immutable) `static` variables only.
+Do **not** use it for locals or on heap. That is validated by implementation of
+[core::ops::Drop](https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html), which `panic`-s in
+debug builds.
+
+See unit tests in [src/lib.rs](src/lib.rs).
+
 ## Compatibility
 
 `ndd` is `no_std`-compatible and it doesn't need heap (`alloc`) either. Release versions
 (**even**-numbered major versions, and **not** `-nightly` pre-releases) compile with `stable` Rust.
-(More below).
+(More below.)
 
 ### Stable is always forward compatible
 
-`ndd` is planned to be always below version `1.0`. That allows you to specify it as a dependency
-with version `0.*` (which is **not** possible for `1.0` and higher). That will match the newest
-(**even**-numbered major) stable version (available for your Rust) automatically.
+`ndd` is planned to be always below version `1.0`. (If a need arises for big incompatible
+functionality, that can go in a new crate.)
 
-### Stable and nightly
+That allows you to specify `ndd` as a dependency with version `0.*`, which will match ANY **major**
+versions (below `1.0`, of course). That will match the newest (**even**-numbered major) stable
+version (available for your Rust) automatically.
 
-Versioning convention:
+This is special only to `0.*` - it is **not** possible to have a wildcard matching various **major**
+versions `1.0` or higher.
+
+### Versioning convention:
 
 - **Even**-numbered major versions (`0.2`, `0.4`...)
-  - are for `stable` functionality only.
+  - are for **stable** functionality only.
   - don't use any pre-release identifier (so, nothing like `0.4-alpha`).
+  - here they are called **"stable"**, but the version name/identifier doesn't include "stable"
+    word.
 - **Odd**-numbered major versions (`0.3`, `0.5`...)
-  - are, indeed, for `nightly` (unstable) functionality, and need `nightly` Rust toolchain.
   - always contain `-nightly` (pre-release identifier) in their name.
-  - include functionality already present in lower stable versions with the numeric version lower by
-    (major) `1`.
+  - are, indeed, for `nightly` (**unstable**) functionality, and need `nightly` Rust toolchain
+    (indicated with `rust-toolchain.toml` which is present on `nightly` branch only).
+  - include functionality already present in some lower stable versions. Not all of them - only:
+    - stable versions with a **lower major** numeric version, and
+    - if the stable **major** version is lower by **`0.1` only** (and not by more), then the stable
+      **minor** version has to be the **same or lower** (than minor version of the **odd-numbered**
+      (`-nightly`)).
 
-    So if `z = x + 1` then
-    - `0.x.y` (stable) and
-    - `0.z.y-nightly`
-    
-    then `0.z.y-nightly` includes all functionality already present in `0.x.y` (stable).
+    So if `x < z`
+    - `0.x.y` (stable)
+    - `0.z.y-nightly` is (indeed) `nightly`
+      - `0.z.y-nightly` includes all functionality already present in `0.x.y` (stable).
+    - But, if `x + 0.1 == z` and `y < w`
+      - `0.z.y-nightly` does **not** include any functionality **new** in `0.x.w` (stable), because
+        it was **not** present in `0.x.y` yet).
     
     Examples:
-    - `0.2.1` (stable) and
+    - `0.2.1` (stable)
     - `0.3.1-nightly`
       - `0.3.1-nightly` includes functionality present in `0.2.1` (stable).
-    - `0.2.2` (stable) and
+    - `0.2.2` (stable)
     - `0.3.2-nightly`
       - `0.3.2-nightly` includes functionality present in `0.2.2` (if they get published), **BUT:**
-    - `0.2.1` (stable) and
+    - `0.2.1` (stable)
     - `0.3.1-nightly`
       - `0.3.1-nightly` will **not** include functionality present in `0.2.2` that was not present
         in `0.2.1`.
@@ -94,22 +115,28 @@ Versioning convention:
   trick](https://github.com/dtolnay/semver-trick). See also [The Cargo Book > Dependency
   Resolution](https://rustwiki.org/en/cargo/reference/resolver.html#version-incompatibility-hazards).
   
-  However, `ndd`'s only exported type is `ndd::NonDeDuplicated`. It is a zero-cost wrapper suitable
-  for immutable `static` variables. It is **not** intended for function parameters, local variables
-  or as a composite type (if you do have such a use case, please get in touch).
-  
-  Since `ndd::NonDeDuplicated` is not being passed around, and its functions can get
-  inlined/optimized away, there shouldn't be any big binary size/speed or usability difference if
-  there happen to be multiple major versions of `ndd` in use at the same time. So SemVer trick may
-  be unnecessary.
+  However, the only type exported from `ndd` is `ndd::NonDeDuplicated`. It is a zero-cost wrapper
+  suitable for immutable `static` variables. It is normally not being passed around as a
+  parameter/return type or a composite type. And its functions can get inlined/optimized away. So,
+  there shouldn't be any big binary size/speed difference, or usability difference, if there happen
+  to be multiple major versions of `ndd` in use at the same time. They would be all isolated. So
+  SemVer trick may be unnecessary.
 
-Rule of thumb: On `stable` Rust, always specify `ndd` with version `0.*`. Then, automatically
+#### Rule of thumb for stable versions
 
-- you will get the newest available even-numbered major (`stable`) version, and
-- your libraries will work with any newer odd-numbered major (`-nightly`) version of `ndd`, too, if
-  any dependency (direct or transitive) requires it.
+On `stable` Rust, always specify `ndd` with version `0.*`. Then, automatically:
 
-### Nightly
+- you will get the newest available even-numbered major (stable) version, and
+- your libraries will work with any newer **odd-numbered** major (`-nightly`) version of `ndd`, too,
+  if any dependency (direct or transitive) requires it.
+
+#### Rule of thumb for unstable versions
+
+To find out the highest **even-numbered** (stable) version whose functionality is included in a
+given **odd-numbered** (`-nightly`) version, decrement the **odd-numbered** version by `0.1` (and
+remove the `-nightly` suffix).
+
+### Nightly versioning
 
 We prefer not to introduce temporary cargo features. Removing a feature later is a breaking change.
 And we don't want just to make such a feature no-op and let it sit around.
@@ -123,19 +150,20 @@ So, instead, any `nightly`-only functionality is in separate version stream(s) t
   containing `-nightly` in their name.
 - use **odd**-numbered major version numbers (`0.3.x`, `0.5.x`...). And, because they are always
   **pre-releases**, their version has to be specified including the pre-release identifier
-  `-nightly`. So, **unlike** odd-numbered major (`stable`) versions, `-nightly` versions they
-  **cannot** be matched with `0.*`. Therefore they
-  - will **not** match/auto-update to even-numbered major (`stable`) versions, and
-  - will **not** match/auto-update to higher major versions (whether odd or even) either.
-  
-So a `stable` (**non**-pre-release) version will NOT match/auto-update to a **pre-release** version
-on its own. Therefore, if your crate and its dependencies specify `ndd` version as `0.*`, they will
-**not** accidentally request **odd**-numbered major (`-nightly`) on their own. They would get a
-(`-nightly`) version only if another crate requires it - but that's up to the consumer.
+  `-nightly`. So, **unlike** even-numbered major (stable) versions, `-nightly` versions **cannot**
+  be matched with `0.*`. Therefore they will **not** match/auto-update to any other **major**
+  version (whether odd or even).
 
-If you want more control over `stable` versions, you can specify the **even**-numbered major version
-with an asterisk mask for the minor version, like `0.2.*`. But then you lose automatic major
-updates.
+As per Rust resolver rules, a stable (**non**-pre-release) version will NOT match/auto-update to a
+**pre-release** version on its own. Therefore, if your crate and/or its dependencies specify `ndd`
+version as `0.*`, they will **not** accidentally request an **odd**-numbered major (`-nightly`) on
+their own.
+
+They can get a (`-nightly`) version, but only if another crate requires it. That's up to the
+consumer.
+
+If you want more control over stable versions, you can fix the **even**-numbered major version, and
+use an asterisk mask for the minor version, like `0.2.*`. But then you lose automatic major updates.
 
 ### Nightly functionality
 
@@ -170,6 +198,11 @@ Checked and tested (also with [MIRI](https://github.com/rust-lang/miri)):
 - `cargo test`
 - `cargo test --release`
 - `cargo +nightly miri test`
+
+Versioning convention is validated:
+
+- locally with GIT [pre-commit](./pre-commit) hook, and
+- with a [GitHub action](.github/workflows/main.yml).
 
 ## Use cases
 
