@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.3
+## 0.2.3 and 0.3.3-nightly
 
 - Validation: For `static` variables only. Dropping `ndd::NonDeDuplicated` in debug build panics.
 - New tests.
