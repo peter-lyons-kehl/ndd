@@ -135,7 +135,14 @@ mod tests {
         assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_2));
     }
 
-    const STR_CONST: &str = {
+    const STR_CONST_FROM_BYTES: &str = {
+        if let Ok(s) = str::from_utf8(&[b'H', b'i']) {
+            s
+        } else {
+            panic!()
+        }
+    };
+    const STR_CONST_FROM_BYTE_STRING: &str = {
         if let Ok(s) = str::from_utf8(b"Hi") {
             s
         } else {
@@ -145,14 +152,20 @@ mod tests {
 
     #[cfg(not(miri))]
     #[test]
-    #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST, \"Hi\")")]
-    fn str_global_const_and_local_static_release_and_debug() {
-        assert!(!ptr::eq(STR_CONST, "Hi"));
+    #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST_FROM_BYTES, \"Hi\")")]
+    fn str_global_byte_slice_const_and_local_str_release_and_debug() {
+        assert!(!ptr::eq(STR_CONST_FROM_BYTES, "Hi"));
     }
     #[cfg(miri)]
     #[test]
-    fn str_global_const_and_local_static_miri() {
-        assert!(!ptr::eq(STR_CONST, "Hi"));
+    fn str_global_byte_slice_const_and_local_str_miri() {
+        assert!(!ptr::eq(STR_CONST_FROM_BYTES, "Hi"));
+    }
+
+    /// This is the same for all three: release, debug AND miri!
+    #[test]
+    fn str_global_byte_by_byte_const_and_local_static_miri() {
+        assert!(ptr::eq(STR_CONST_FROM_BYTE_STRING, "Hi"));
     }
 
     static STR_STATIC: &str = "Hello";
