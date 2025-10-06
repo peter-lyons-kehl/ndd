@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/sh
 # Validate "version" field in Cargo.toml, so that it confirms to stable vs. nightly versioning as
 # described in README.md.
 #

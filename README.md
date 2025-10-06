@@ -1,5 +1,8 @@
 # ndd (Non-De-Duplicated)
 
+![GitHub Actions
+results](https://github.com/peter-lyons-kehl/ndd/actions/workflows/main.yml/badge.svg)
+
 ## Summary
 
 Zero-cost transparent wrapper. For `static` variables guaranteed not to share memory with any other
@@ -211,6 +214,8 @@ Checked and tested (also with [MIRI](https://github.com/rust-lang/miri)):
 - `cargo clippy`
 - `cargo test`
 - `cargo test --release`
+- `rustup install nightly --profile minimal`
+- `rustup +nightly component add miri`
 - `cargo +nightly miri test`
 - `release`-only tests:
   - `demo-fat-lto/static_option_u8.sh`
@@ -234,5 +239,6 @@ Please subscribe for low frequency updates at
 
 ## Side fruit
 
-This is `std`-only, but related: `std::sync::mutex::data_ptr(&self)` is now `const` function: pull
-request [rust-lang/rust#146904](https://github.com/rust-lang/rust/pull/146904).
+The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr(&self)` is now
+`const` function: pull request
+[rust-lang/rust#146904](https://github.com/rust-lang/rust/pull/146904).

@@ -1,16 +1,32 @@
-name: Validate Version
+name: Run tests and validate version
 
 on:
   push:
   pull_request:
 
 jobs:
-  validate-version:
+  version_check-clippy-tests-demo:
     runs-on: ubuntu-latest
+    # Cargo.toml has "rust-version" (MSRV) 1.86. However, tests need 1.87.
+    container: rust:1.87-alpine
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run pre-commit
         run: ./pre-commit
-        shell: bash
+        shell: sh
+
+      - name: Tests and demos
+        run: |
+          rustup component add clippy
+          cargo clippy
+          cargo test
+          cargo test --release
+          rustup install nightly --profile minimal
+          rustup +nightly component add miri
+          cargo +nightly miri test
+          demo-fat-lto/static_option_u8.sh
+          demo-fat-lto/static_str.sh
+          demo-fat-lto/literal_str.sh
+        shell: sh

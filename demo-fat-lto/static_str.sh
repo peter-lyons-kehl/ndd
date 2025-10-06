@@ -1,12 +1,14 @@
-#!/usr/bin/bash
-cd "$(dirname "${BASH_SOURCE[0]}")"
+#!/bin/sh
+set -e
+cd "$(dirname "$0")"
 
-mapfile -t lines < <(cargo run --bin static_str --quiet --release)
-
-if [ ${lines[0]} != ${lines[1]} ]
-then
-    echo ${lines[0]}
-    echo ${lines[1]}
-    echo The static/const/literals should have been optimized to have same addresses.
-    exit 1
-fi
+cargo run --bin static_str --quiet --release | {
+    read -r line1
+    read -r line2
+    if [ "$line1" != "$line2" ]; then
+        echo "$line1"
+        echo "$line2"
+        echo "The static/const/literals should have been optimized to have same addresses."
+        exit 1
+    fi
+}

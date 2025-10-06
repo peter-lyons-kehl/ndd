@@ -99,7 +99,7 @@ mod tests {
 
     fn _deref() -> &'static u8 {
         static N: NonDeDuplicated<u8> = NonDeDuplicated::<u8>::new(0);
-        &*N
+        &N
     }
 
     #[test]
@@ -127,7 +127,7 @@ mod tests {
     }
 
     static U8_NDD: NonDeDuplicated<u8> = NonDeDuplicated::new(U8_CONST);
-    static U8_NDD_REF: &'static u8 = U8_NDD.get();
+    static U8_NDD_REF: &u8 = U8_NDD.get();
     #[test]
     fn u8_global_const_and_ndd() {
         assert!(!ptr::eq(U8_NDD_REF, &U8_CONST));
@@ -135,8 +135,8 @@ mod tests {
         assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_2));
     }
 
-    const STR_CONST: &'static str = {
-        if let Ok(s) = str::from_utf8(&[b'H', b'i']) {
+    const STR_CONST: &str = {
+        if let Ok(s) = str::from_utf8(b"Hi") {
             s
         } else {
             panic!()
@@ -155,7 +155,7 @@ mod tests {
         assert!(!ptr::eq(STR_CONST, "Hi"));
     }
 
-    static STR_STATIC: &'static str = "Hello";
+    static STR_STATIC: &str = "Hello";
 
     #[cfg(not(miri))]
     #[should_panic(expected = "assertion failed: !ptr::eq(local_const_based_slice, STR_STATIC)")]

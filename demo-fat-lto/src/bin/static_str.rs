@@ -1,4 +1,4 @@
-const CROSS: &'static str = "CROSS";
+const CROSS: &str = "CROSS";
 
 fn main() {
     cross_crate::print_static_str();
