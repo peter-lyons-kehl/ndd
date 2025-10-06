@@ -2,14 +2,16 @@
 
 ## Summary
 
-Zero-cost transparent wrapper. Use when comparing `static` references/slices/pointers by address.
-For `static` variables guaranteed not to share memory with any other `static` or `const`.
+Zero-cost transparent wrapper. For `static` variables guaranteed not to share memory with any other
+`static` or `const` (or local literals). Especially for `static` data (single
+variables/arrays/slices) referenced with references/slices/pointers that are **compared by
+address**.
 
 ## Problem
 
-Rust (or, rather, LLVM) by default de-duplicates or reuses `static` data and its parts. For most
-purposes that is good: The result binary is smaller, and because of more successful cache hits the
-execution may be faster.
+Rust (or, rather, LLVM) by default de-duplicates or reuses **addresses** of `static` variables in
+`release` builds. And somewhat in `debug` builds, too. For most purposes that is good: The result
+binary is smaller, and because of more successful cache hits, the execution may be faster.
 
 However, that is counter-productive when the code identifies/compares `static` data by memory
 address of the reference (whether a Rust reference/slice, or a pointer/pointer range). For example,
@@ -19,17 +21,29 @@ designated `static` variable by reference/slice/pointer/pointer range. (Your spe
 cast such references/slices to pointers and compare them by address with
 [`core::ptr::eq()`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html).)
 
-You don't want the client, nor the compiler/LLVM, to reuse/share the memory address of such a
-designated `static` for any other ("ordinary") `static` or `const` values/expressions. That does
-work out of the box when the client passes a reference/slice defined as `static`: (even with the
-default `release` optimizations) each static gets its own memory space. See a test [`src/lib.rs` ->
+Then you don't want the client, nor the compiler/LLVM, to reuse/share the memory address of such a
+designated `static` for any other ("ordinary") `static` or `const` values/expressions, or local
+numerical/character/byte/string slice literals. That does work out of the box when the client passes
+a reference/slice defined as `static`: (even with the default `release` optimizations) each `static`
+gets its own memory space. See a test [`src/lib.rs` ->
 `addresses_unique_between_statics()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L72).
 
-However, it is a problem (in release mode) with ("ordinary") `const` values/expressions that equal
-in value to the designated `static`. Rust/LLVM uses one matching `static`'s address for references
-to equal value(s) defined as `const`. See a test [`src/lib.rs` ->
+However, there is a problem (in `release` mode, and for some types even in `debug` mode). It affects
+("ordinary") `const` values/expressions that equal in value to any `static` (which may be your
+designated `static`). Rust/LLVM re-uses address of one such matching `static`' for references to
+equal value(s) defined as `const`. See a test [`src/lib.rs` ->
 `addresses_not_unique_between_const_and_static()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L95).
-And such `const` definitions could even be in 3rd party (innocent) code!
+Such `const`, `static` or literal could be in 3rd party code, and even private (see
+[`demo-fat-lto`](./demo-fat-lto))!
+
+Things get worse: `debug` builds don't have this consistent.
+
+- For some types (`u8`, numeric primitive-based enums) `debug` builds don't reuse `static` addresses
+  for references/slices to `const` values. But
+- For other types (`str`), `debug` builds do reuse them...
+- Only `MIRI` doesn't reuse `static` addresses at all.
+
+Even worse so: `release` builds don't have this consistent.
 
 ## Solution
 
@@ -198,8 +212,12 @@ Checked and tested (also with [MIRI](https://github.com/rust-lang/miri)):
 - `cargo test`
 - `cargo test --release`
 - `cargo +nightly miri test`
+- `release`-only tests:
+  - `demo-fat-lto/static_option_u8.sh`
+  - `demo-fat-lto/static_str.sh`
+  - `demo-fat-lto/literal_str.sh`
 
-Versioning convention is validated:
+The versioning convention is validated:
 
 - locally with GIT [pre-commit](./pre-commit) hook, and
 - with a [GitHub action](.github/workflows/main.yml).
@@ -213,3 +231,8 @@ Used by
 
 Please subscribe for low frequency updates at
 [#2](https://github.com/peter-lyons-kehl/ndd/issues/2).
+
+## Side fruit
+
+This is `std`-only, but related: `std::sync::mutex::data_ptr(&self)` is now `const` function: pull
+request [rust-lang/rust#146904](https://github.com/rust-lang/rust/pull/146904).

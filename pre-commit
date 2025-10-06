@@ -1,6 +1,8 @@
 #!/usr/bin/bash
-
-# The "version" field get validated by cargo:
+# Validate "version" field in Cargo.toml, so that it confirms to stable vs. nightly versioning as
+# described in README.md.
+#
+# The "version" field also gets validated by cargo and crates.io:
 # - it must have three numeric parts
 # - it must not start with leading zero(s).
 #

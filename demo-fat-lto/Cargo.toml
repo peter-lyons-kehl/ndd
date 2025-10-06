@@ -1,0 +1,13 @@
+[package]
+name = "demo-fat-lto"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cross-crate = {path = "cross-crate" }
+
+[lints.rust]
+unexpected_cfgs = { level = "forbid"}
+
+[profile.release]
+lto = "fat"

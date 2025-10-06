@@ -1,1 +1,4 @@
 /target
+/demo-fat-lto/target
+/demo-fat-lto/cross-crate/target
+

@@ -60,7 +60,7 @@ impl<T> Drop for NonDeDuplicated<T> {
     fn drop(&mut self) {
         // If the client uses Box::leak() or friends, then drop() will NOT happen. That is OK: A
         // leaked reference will have static lifetime.
-        #[cfg(debug_assertions)]
+        #[cfg(any(debug_assertions, miri))]
         panic!("Do not use for local variables or on heap. Use for static variables only.")
     }
 }
@@ -73,17 +73,12 @@ mod tests {
     const fn expect_sync_ref<T: Sync>() {}
     const _: () = expect_sync_ref::<NonDeDuplicated<u8>>();
 
-    type A = u8;
-    const A_CONST: A = b'A';
-    static A_STATIC_1: A = b'A';
-    static A_STATIC_2: A = b'A';
-
+    #[test]
     #[cfg(any(debug_assertions, miri))]
     #[should_panic(
         expected = "Do not use for local variables or on heap. Use for static variables only."
     )]
-    #[test]
-    fn drop_panics_in_debug() {
+    fn drop_panics_in_debug_and_miri() {
         let _: NonDeDuplicated<()> = ().into();
     }
 
@@ -93,9 +88,13 @@ mod tests {
         let _: NonDeDuplicated<()> = ().into();
     }
 
+    const U8_CONST: u8 = b'A';
+    static U8_STATIC_1: u8 = b'A';
+    static U8_STATIC_2: u8 = b'A';
+
     #[test]
     fn addresses_unique_between_statics() {
-        assert!(!ptr::eq(&A_STATIC_1, &A_STATIC_2));
+        assert!(!ptr::eq(&U8_STATIC_1, &U8_STATIC_2));
     }
 
     fn _deref() -> &'static u8 {
@@ -113,20 +112,93 @@ mod tests {
     }
 
     #[cfg(not(any(debug_assertions, miri)))]
-    /// In release, [ARR_CONST] gets optimized away and points to the same address as
-    /// [ARR_STATIC_1]!
-    #[should_panic(expected = "assertion failed: !ptr::eq(&A_STATIC_1, &A_CONST)")]
+    /// In release, [U8_CONST] gets optimized away and points to the same address as
+    /// [U8_STATIC_1]!
+    #[should_panic(expected = "assertion failed: !ptr::eq(&U8_STATIC_1, &U8_CONST)")]
     #[test]
-    fn addresses_not_unique_between_const_and_static() {
-        assert!(!ptr::eq(&A_STATIC_1, &A_CONST));
+    fn u8_global_const_and_global_static_release() {
+        assert!(!ptr::eq(&U8_STATIC_1, &U8_CONST));
+    }
+    #[cfg(any(debug_assertions, miri))]
+    /// In debug/MIRI, [ARR_CONST] and [ARR_STATIC_1] have unique/separate addresses!
+    #[test]
+    fn u8_global_const_global_and_static_debug_and_miri() {
+        assert!(!ptr::eq(&U8_STATIC_1, &U8_CONST));
     }
 
-    static A_NDD: NonDeDuplicated<A> = NonDeDuplicated::new(A_CONST);
-    static A_NDD_REF: &'static A = A_NDD.get();
+    static U8_NDD: NonDeDuplicated<u8> = NonDeDuplicated::new(U8_CONST);
+    static U8_NDD_REF: &'static u8 = U8_NDD.get();
     #[test]
-    fn addresses_unique_between_const_and_ndd() {
-        assert!(!ptr::eq(A_NDD_REF, &A_CONST));
-        assert!(!ptr::eq(A_NDD_REF, &A_STATIC_1));
-        assert!(!ptr::eq(A_NDD_REF, &A_STATIC_2));
+    fn u8_global_const_and_ndd() {
+        assert!(!ptr::eq(U8_NDD_REF, &U8_CONST));
+        assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_1));
+        assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_2));
+    }
+
+    const STR_CONST: &'static str = {
+        if let Ok(s) = str::from_utf8(&[b'H', b'i']) {
+            s
+        } else {
+            panic!()
+        }
+    };
+
+    #[cfg(not(miri))]
+    #[test]
+    #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST, \"Hi\")")]
+    fn str_global_const_and_local_static_release_and_debug() {
+        assert!(!ptr::eq(STR_CONST, "Hi"));
+    }
+    #[cfg(miri)]
+    #[test]
+    fn str_global_const_and_local_static_miri() {
+        assert!(!ptr::eq(STR_CONST, "Hi"));
+    }
+
+    static STR_STATIC: &'static str = "Hello";
+
+    #[cfg(not(miri))]
+    #[should_panic(expected = "assertion failed: !ptr::eq(local_const_based_slice, STR_STATIC)")]
+    #[test]
+    fn str_local_const_based_and_global_static_release_and_debug() {
+        str_local_const_based_and_global_static_impl();
+    }
+    #[cfg(miri)]
+    #[test]
+    fn str_local_const_based_and_global_static_miri() {
+        str_local_const_based_and_global_static_impl();
+    }
+    fn str_local_const_based_and_global_static_impl() {
+        const LOCAL_CONST_ARR: [u8; 5] = [b'H', b'e', b'l', b'l', b'o'];
+        let local_const_based_slice: &str = str::from_utf8(&LOCAL_CONST_ARR).unwrap();
+        assert!(!ptr::eq(local_const_based_slice, STR_STATIC));
+    }
+
+    mod cross_module_static {
+        pub static STATIC_OPT_U8_A: Option<u8> = Some(b'A');
+    }
+    mod cross_module_const {
+        use core::ptr;
+        pub const CONST_OPT_U8_A: Option<u8> = Some(b'A');
+
+        #[cfg(not(any(debug_assertions, miri)))]
+        #[test]
+        #[should_panic(
+            expected = "assertion failed: !ptr::eq(&CONST_OPT_U8_A, &super::cross_module_static::STATIC_OPT_U8_A)"
+        )]
+        fn option_u8_global_const_global_static_release() {
+            assert!(!ptr::eq(
+                &CONST_OPT_U8_A,
+                &super::cross_module_static::STATIC_OPT_U8_A
+            ));
+        }
+        #[cfg(any(debug_assertions, miri))]
+        #[test]
+        fn option_u8_global_const_global_static_debug_and_miri() {
+            assert!(!ptr::eq(
+                &CONST_OPT_U8_A,
+                &super::cross_module_static::STATIC_OPT_U8_A
+            ));
+        }
     }
 }
