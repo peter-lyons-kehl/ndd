@@ -1,0 +1,1 @@
+../../../bin-shared/src/bin/literal_str.rs

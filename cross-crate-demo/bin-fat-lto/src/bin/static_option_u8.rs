@@ -1,0 +1,1 @@
+../../../bin-shared/src/bin/static_option_u8.rs

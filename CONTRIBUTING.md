@@ -19,6 +19,11 @@ ln -s ../../pre-commit
 `nightly` functionality is on [`nightly`
 branch](https://github.com/peter-lyons-kehl/ndd/tree/nightly).
 
+### Warning about nightly
+
+`nightly` branch is subject to continuous rebase (and forced push). If you need to extend/modify
+`nightly`-specific functionality, communicate first.
+
 ## File formatting
 
 - Use `cargo fmt` for Rust source.

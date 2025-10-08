@@ -3,5 +3,12 @@
 version = 4
 
 [[package]]
-name = "ndd"
-version = "0.2.5"
+name = "bin"
+version = "0.1.0"
+dependencies = [
+ "callee",
+]
+
+[[package]]
+name = "callee"
+version = "0.1.0"

@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(any(doc, test)), no_std)]
 
+use core::any::Any;
 use core::cell::Cell;
 use core::ops::Deref;
 
@@ -9,12 +10,38 @@ use core::ops::Deref;
 /// addresses compared with [core::ptr::eq].
 ///
 /// It has same size, layout and alignment as type parameter `T`.
+///
+/// `T` must implement [Any]. That is automatic for any types that don't have any lifetimes (other
+/// than `'static`). This requirement givesn an earlier error when `NonDeDuplicated` is used other
+/// than intended.
+///
+/// We don't just limit to be `:'static`, because then `NonDeDuplicated` could still be somewhat
+/// used with non-static lifetimes, and the error would surface only later. The following **would**
+/// compile:
+/// ```rust
+/// # use core::cell::Cell;
+///
+/// pub struct NonDeDuplicatedStatic<T: 'static> {
+///    cell: Cell<T>,
+///}
+///
+/// type NddU8ref<'a> = NonDeDuplicatedStatic<&'a u8>;
+///
+/// fn callee<'a>(r: NddU8ref<'a>) {}
+/// ```
+/// Only the following would then fail (to compile):
+/// ```rust,ignore
+/// fn caller<'a>(r: &'a u8) { let u = 0u8; callee(NonDeDuplicatedStatic::new(uref)); }
+/// ```
+///
+/// But, by requiring `NonDeDuplicated`'s generic parameter `T` to implement [Any] the first
+/// example above fails, too. That prevents mistakes earlier.
 #[repr(transparent)]
-pub struct NonDeDuplicated<T> {
+pub struct NonDeDuplicated<T: Any> {
     cell: Cell<T>,
 }
 
-impl<T> NonDeDuplicated<T> {
+impl<T: Any> NonDeDuplicated<T> {
     /// Construct a new instance.
     pub const fn new(value: T) -> Self {
         Self {
@@ -31,7 +58,7 @@ impl<T> NonDeDuplicated<T> {
     }
 }
 
-impl<T> Deref for NonDeDuplicated<T> {
+impl<T: Any> Deref for NonDeDuplicated<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -39,7 +66,7 @@ impl<T> Deref for NonDeDuplicated<T> {
     }
 }
 
-impl<T> From<T> for NonDeDuplicated<T> {
+impl<T: Any> From<T> for NonDeDuplicated<T> {
     fn from(value: T) -> Self {
         Self::new(value)
     }
@@ -47,16 +74,16 @@ impl<T> From<T> for NonDeDuplicated<T> {
 
 /// For now, [Sync] requires that `T` is both [Sync] AND [Send], following
 /// [std::sync::Mutex](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E).
-/// However, from https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html it seems that `T:
+/// However, from <https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html> it seems that `T:
 /// Send` may be unnecessary? Please advise.
 ///
 /// Either way, [NonDeDuplicated] exists specifically for static variables. Those get never moved
 /// out. So, unlike [std::sync::Mutex], [NonDeDuplicated] itself doesn't need to implement [Send].
-unsafe impl<T: Send + Sync> Sync for NonDeDuplicated<T> {}
+unsafe impl<T: Any + Send + Sync> Sync for NonDeDuplicated<T> {}
 
 /// [NonDeDuplicated] is intended for `static` (immutable) variables only. So [Drop::drop] panics in
 /// debug builds.
-impl<T> Drop for NonDeDuplicated<T> {
+impl<T: Any> Drop for NonDeDuplicated<T> {
     fn drop(&mut self) {
         // If the client uses Box::leak() or friends, then drop() will NOT happen. That is OK: A
         // leaked reference will have static lifetime.
@@ -135,7 +162,7 @@ mod tests {
         assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_2));
     }
 
-    const STR_CONST_FROM_BYTES: &str = {
+    const STR_CONST_FROM_BYTE_ARRAY: &str = {
         if let Ok(s) = str::from_utf8(&[b'H', b'i']) {
             s
         } else {
@@ -143,7 +170,7 @@ mod tests {
         }
     };
     const STR_CONST_FROM_BYTE_STRING: &str = {
-        if let Ok(s) = str::from_utf8(b"Hi") {
+        if let Ok(s) = str::from_utf8(b"Hello") {
             s
         } else {
             panic!()
@@ -152,23 +179,23 @@ mod tests {
 
     #[cfg(not(miri))]
     #[test]
-    #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST_FROM_BYTES, \"Hi\")")]
+    #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST_FROM_BYTE_ARRAY, \"Hi\")")]
     fn str_global_byte_slice_const_and_local_str_release_and_debug() {
-        assert!(!ptr::eq(STR_CONST_FROM_BYTES, "Hi"));
+        assert!(!ptr::eq(STR_CONST_FROM_BYTE_ARRAY, "Hi"));
     }
     #[cfg(miri)]
     #[test]
     fn str_global_byte_slice_const_and_local_str_miri() {
-        assert!(!ptr::eq(STR_CONST_FROM_BYTES, "Hi"));
+        assert!(!ptr::eq(STR_CONST_FROM_BYTE_ARRAY, "Hi"));
     }
 
     /// This is the same for all three: release, debug AND miri!
     #[test]
     fn str_global_byte_by_byte_const_and_local_static_miri() {
-        assert!(ptr::eq(STR_CONST_FROM_BYTE_STRING, "Hi"));
+        assert!(ptr::eq(STR_CONST_FROM_BYTE_STRING, "Hello"));
     }
 
-    static STR_STATIC: &str = "Hello";
+    static STR_STATIC: &str = "Ciao";
 
     #[cfg(not(miri))]
     #[should_panic(expected = "assertion failed: !ptr::eq(local_const_based_slice, STR_STATIC)")]
@@ -182,7 +209,7 @@ mod tests {
         str_local_const_based_and_global_static_impl();
     }
     fn str_local_const_based_and_global_static_impl() {
-        const LOCAL_CONST_ARR: [u8; 5] = [b'H', b'e', b'l', b'l', b'o'];
+        const LOCAL_CONST_ARR: [u8; 4] = [b'C', b'i', b'a', b'o'];
         let local_const_based_slice: &str = str::from_utf8(&LOCAL_CONST_ARR).unwrap();
         assert!(!ptr::eq(local_const_based_slice, STR_STATIC));
     }

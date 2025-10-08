@@ -3,12 +3,12 @@
 version = 4
 
 [[package]]
-name = "cross-crate"
-version = "0.1.0"
-
-[[package]]
-name = "demo-fat-lto"
+name = "bin"
 version = "0.1.0"
 dependencies = [
- "cross-crate",
+ "callee",
 ]
+
+[[package]]
+name = "callee"
+version = "0.1.0"
