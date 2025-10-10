@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(any(doc, test)), no_std)]
+#![feature(const_convert, const_trait_impl)]
 
 use core::any::Any;
 use core::cell::Cell;
@@ -58,7 +59,7 @@ impl<T: Any> NonDeDuplicated<T> {
     }
 }
 
-impl<T: Any> Deref for NonDeDuplicated<T> {
+impl<T: Any> const Deref for NonDeDuplicated<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -66,9 +67,15 @@ impl<T: Any> Deref for NonDeDuplicated<T> {
     }
 }
 
-impl<T: Any> From<T> for NonDeDuplicated<T> {
+impl<T: Any> const From<T> for NonDeDuplicated<T> {
     fn from(value: T) -> Self {
         Self::new(value)
+    }
+}
+
+impl<T: Any, const N: usize> NonDeDuplicated<[T; N]> {
+    pub const fn as_array_of_cells(&self) -> &[NonDeDuplicated<T>; N] {
+        unsafe { core::mem::transmute(self.cell.as_array_of_cells()) }
     }
 }
 
