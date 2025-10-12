@@ -3,16 +3,16 @@
 
 use core::any::Any;
 use core::cell::Cell;
-use core::ops::Deref;
+use core::marker::PhantomData;
 
 /// A zero-cost  wrapper guaranteed not to share its memory location with any other valid (in-scope)
 /// variable (even `const` equal to the inner value). Use for `static` variables that have their
 /// addresses compared with [core::ptr::eq].
 ///
-/// It has same size, layout and alignment as type parameter `T`.
+/// It has same size, layout and alignment as type parameter `OWN`.
 ///
 /// `T` must implement [Any]. That is automatic for any types that don't have any lifetimes (other
-/// than `'static`). This requirement givesn an earlier error when `NonDeDuplicated` is used other
+/// than `'static`). This requirement gives an earlier error when `NonDeDuplicated` is used other
 /// than intended.
 ///
 /// We don't just limit to be `:'static`, because then `NonDeDuplicated` could still be somewhat
@@ -37,17 +37,23 @@ use core::ops::Deref;
 /// But, by requiring `NonDeDuplicated`'s generic parameter `T` to implement [Any] the first
 /// example above fails, too. That prevents mistakes earlier.
 #[repr(transparent)]
-pub struct NonDeDuplicated<T: Any> {
-    cell: Cell<T>,
+pub struct NonDeDuplicatedFlexible<FROM, OWN: Any + Send + Sync, TO: Any + ?Sized> {
+    cell: Cell<OWN>,
+    _f: PhantomData<FROM>,
+    _t: PhantomData<TO>,
 }
 
-impl<T: Any> NonDeDuplicated<T> {
+pub type NonDeDuplicated<T> = NonDeDuplicatedFlexible<T, T, T>;
+
+impl<T: Any + Send + Sync> NonDeDuplicated<T> {
     /// Construct a new instance.
     pub const fn new(value: T) -> Self {
         Self {
             //Using core::hint::black_box() seems unnecessary.
-            //cell: Cell::new(core::hint::black_box(data)),
+            //cell: Cell::new(core::hint::black_box(value)),
             cell: Cell::new(value),
+            _f: PhantomData,
+            _t: PhantomData,
         }
     }
 
@@ -58,37 +64,83 @@ impl<T: Any> NonDeDuplicated<T> {
     }
 }
 
-impl<T: Any> Deref for NonDeDuplicated<T> {
-    type Target = T;
+pub type NonDeDuplicatedStr<const N: usize> = NonDeDuplicatedFlexible<&'static str, [u8; N], str>;
+impl<const N: usize> NonDeDuplicatedStr<N> {
+    /// Construct a new instance.
+    pub const fn new(s: &str) -> Self {
+        if s.len() > N {
+            let msg = match s.len() - N {
+                1 => "N is 1 byte too small.",
+                2 => "N is 2 bytes too small.",
+                3 => "N is 3 bytes too small.",
+                4 => "N is 4 bytes too small.",
+                _ => "N is more than 4 bytes too small.",
+            };
+            panic!("{}", msg)
+        }
+        if s.len() < N {
+            let msg = match N - s.len() {
+                1 => "N is 1 byte too large.",
+                2 => "N is 2 bytes too large.",
+                3 => "N is 3 bytes too large.",
+                4 => "N is 4 bytes too large.",
+                _ => "N is more than 4 bytes too large.",
+            };
+            panic!("{}", msg)
+        }
+        let bytes: &[u8] = s.as_bytes();
+        let mut arr = [0u8; N];
+        let mut i = 0;
+        while i < bytes.len() {
+            arr[i] = bytes[i];
+            i += 1;
+        }
+        Self {
+            cell: Cell::new(arr),
+            _f: PhantomData,
+            _t: PhantomData,
+        }
+    }
 
-    fn deref(&self) -> &Self::Target {
-        self.get()
+    /// Get a reference.
+    ///
+    /// Implementation details: Since this type, and this function, is intended to be used for
+    /// `static` or `const` variables, speed doesn't matter. So, we use [core::str::from_utf8]
+    /// (instead of [core::str::from_utf8_unchecked]).
+    pub const fn get(&self) -> &str {
+        let ptr = self.cell.as_ptr();
+        let bytes = unsafe { &*ptr };
+        match core::str::from_utf8(bytes) {
+            Ok(s) => s,
+            Err(_) => unreachable!(),
+        }
     }
 }
 
-impl<T: Any> From<T> for NonDeDuplicated<T> {
-    fn from(value: T) -> Self {
-        Self::new(value)
-    }
-}
-
-/// For now, [Sync] requires that `T` is both [Sync] AND [Send], following
+/// For now, [Sync] requires that `OWN` is both [Sync] AND [Send], following
 /// [std::sync::Mutex](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E).
 /// However, from <https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html> it seems that `T:
 /// Send` may be unnecessary? Please advise.
 ///
 /// Either way, [NonDeDuplicated] exists specifically for static variables. Those get never moved
 /// out. So, unlike [std::sync::Mutex], [NonDeDuplicated] itself doesn't need to implement [Send].
-unsafe impl<T: Any + Send + Sync> Sync for NonDeDuplicated<T> {}
+///
+/// Also, unclear if `TO` needs to be [Send] and [Sync].
+unsafe impl<FROM, OWN: Any + Send + Sync, TO: Any + ?Sized> Sync
+    for NonDeDuplicatedFlexible<FROM, OWN, TO>
+{
+}
 
 /// [NonDeDuplicated] is intended for `static` (immutable) variables only. So [Drop::drop] panics in
-/// debug builds.
-impl<T: Any> Drop for NonDeDuplicated<T> {
+/// debug/miri builds.
+impl<FROM, OWN: Any + Send + Sync, TO: Any + ?Sized> Drop
+    for NonDeDuplicatedFlexible<FROM, OWN, TO>
+{
     fn drop(&mut self) {
         // If the client uses Box::leak() or friends, then drop() will NOT happen. That is OK: A
         // leaked reference will have static lifetime.
         #[cfg(any(debug_assertions, miri))]
-        panic!("Do not use for local variables or on heap. Use for static variables only.")
+        panic!("Do not use for local variables, const, or on heap. Use for static variables only.")
     }
 }
 
@@ -103,16 +155,16 @@ mod tests {
     #[test]
     #[cfg(any(debug_assertions, miri))]
     #[should_panic(
-        expected = "Do not use for local variables or on heap. Use for static variables only."
+        expected = "Do not use for local variables, const, or on heap. Use for static variables only."
     )]
     fn drop_panics_in_debug_and_miri() {
-        let _: NonDeDuplicated<()> = ().into();
+        let _: NonDeDuplicated<()> = NonDeDuplicated::new(());
     }
 
     #[cfg(not(any(debug_assertions, miri)))]
     #[test]
     fn drop_silent_in_release() {
-        let _: NonDeDuplicated<()> = ().into();
+        let _: NonDeDuplicated<()> = NonDeDuplicated::new(());
     }
 
     const U8_CONST: u8 = b'A';
@@ -122,20 +174,6 @@ mod tests {
     #[test]
     fn addresses_unique_between_statics() {
         assert!(!ptr::eq(&U8_STATIC_1, &U8_STATIC_2));
-    }
-
-    fn _deref() -> &'static u8 {
-        static N: NonDeDuplicated<u8> = NonDeDuplicated::<u8>::new(0);
-        &N
-    }
-
-    #[test]
-    fn deref_of_copy_type() {
-        static N: NonDeDuplicated<u8> = NonDeDuplicated::<u8>::new(0);
-
-        let deref = &*N;
-        let get = N.get();
-        assert!(ptr::eq(deref, get));
     }
 
     #[cfg(not(any(debug_assertions, miri)))]
@@ -162,37 +200,44 @@ mod tests {
         assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_2));
     }
 
-    const STR_CONST_FROM_BYTE_ARRAY: &str = {
-        if let Ok(s) = str::from_utf8(&[b'H', b'i']) {
-            s
-        } else {
-            panic!()
-        }
-    };
-    const STR_CONST_FROM_BYTE_STRING: &str = {
-        if let Ok(s) = str::from_utf8(b"Hello") {
-            s
-        } else {
-            panic!()
+    const STR_CONST_FROM_BYTE_ARRAY_HI: &str = {
+        match str::from_utf8(&[b'H', b'i']) {
+            Ok(s) => s,
+            Err(_) => unreachable!(),
         }
     };
 
     #[cfg(not(miri))]
     #[test]
-    #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST_FROM_BYTE_ARRAY, \"Hi\")")]
+    #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST_FROM_BYTE_ARRAY_HI, \"Hi\")")]
     fn str_global_byte_slice_const_and_local_str_release_and_debug() {
-        assert!(!ptr::eq(STR_CONST_FROM_BYTE_ARRAY, "Hi"));
+        assert!(!ptr::eq(STR_CONST_FROM_BYTE_ARRAY_HI, "Hi"));
     }
     #[cfg(miri)]
     #[test]
     fn str_global_byte_slice_const_and_local_str_miri() {
-        assert!(!ptr::eq(STR_CONST_FROM_BYTE_ARRAY, "Hi"));
+        assert!(!ptr::eq(STR_CONST_FROM_BYTE_ARRAY_HI, "Hi"));
     }
+
+    const STR_CONST_FROM_BYTE_STRING_HELLO: &str = {
+        match str::from_utf8(b"Hello") {
+            Ok(s) => s,
+            Err(_) => unreachable!(),
+        }
+    };
 
     /// This is the same for all three: release, debug AND miri!
     #[test]
-    fn str_global_byte_by_byte_const_and_local_static_miri() {
-        assert!(ptr::eq(STR_CONST_FROM_BYTE_STRING, "Hello"));
+    fn str_global_byte_by_byte_const_and_local_static() {
+        assert!(ptr::eq(STR_CONST_FROM_BYTE_STRING_HELLO, "Hello"));
+    }
+
+    static STR_NDD_HI: NonDeDuplicatedStr<5> = NonDeDuplicatedStr::new("Hello");
+    #[test]
+    fn str_ndd_hi() {
+        assert!(!ptr::eq(STR_NDD_HI.get(), "Hi"));
+        assert!(!ptr::eq(STR_NDD_HI.get(), STR_CONST_FROM_BYTE_ARRAY_HI));
+        assert!(!ptr::eq(STR_NDD_HI.get(), STR_CONST_FROM_BYTE_STRING_HELLO));
     }
 
     static STR_STATIC: &str = "Ciao";
@@ -212,6 +257,14 @@ mod tests {
         const LOCAL_CONST_ARR: [u8; 4] = [b'C', b'i', b'a', b'o'];
         let local_const_based_slice: &str = str::from_utf8(&LOCAL_CONST_ARR).unwrap();
         assert!(!ptr::eq(local_const_based_slice, STR_STATIC));
+    }
+
+    static STR_NDD_CIAO: NonDeDuplicatedStr<4> = NonDeDuplicatedStr::new("Ciao");
+    #[test]
+    fn str_local_const_based_and_str_ndd() {
+        const LOCAL_CONST_ARR: [u8; 4] = [b'C', b'i', b'a', b'o'];
+        let local_const_based_slice: &str = str::from_utf8(&LOCAL_CONST_ARR).unwrap();
+        assert!(!ptr::eq(local_const_based_slice, STR_NDD_CIAO.get()));
     }
 
     mod cross_module_static {
