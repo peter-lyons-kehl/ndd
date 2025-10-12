@@ -28,10 +28,10 @@ jobs:
           rustup install nightly --profile minimal
           rustup +nightly component add miri
           cargo +nightly miri test
-          cross-crate-demo/bin/static_option_u8.sh
-          cross-crate-demo/bin/static_str.sh
-          cross-crate-demo/bin/literal_str.sh
-          cross-crate-demo/bin-fat-lto/static_option_u8.sh
-          cross-crate-demo/bin-fat-lto/static_str.sh
-          cross-crate-demo/bin-fat-lto/literal_str.sh
+          cross-crate-demo-problem/bin/invocation_scripts/static_option_u8.sh
+          cross-crate-demo-problem/bin/invocation_scripts/static_str.sh
+          cross-crate-demo-problem/bin/invocation_scripts/literal_str.sh
+          cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_option_u8.sh
+          cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_str.sh
+          cross-crate-demo-problem/bin-fat-lto/invocation_scripts/literal_str.sh
         shell: sh

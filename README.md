@@ -38,7 +38,7 @@ designated `static`). Rust/LLVM re-uses address of one such matching `static`' f
 equal value(s) defined as `const`. See a test [`src/lib.rs` ->
 `addresses_not_unique_between_const_and_static()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L95).
 Such `const`, `static` or literal could be in 3rd party code, and private - not even exported (see
-[`cross-crate-demo`](cross-crate-demo))!
+[`cross-crate-demo-problem`](cross-crate-demo-problem))!
 
 Things get worse: `debug` builds don't have this consistent:
 
@@ -233,12 +233,12 @@ Alpine Linux and are POSIX-compliant.
   - `rustup +nightly component add miri`
   - `cargo +nightly miri test`
 - `release`-only demonstration:
-  - `cross-crate-demo/bin/static_option_u8.sh`
-  - `cross-crate-demo/bin/static_str.sh`
-  - `cross-crate-demo/bin/literal_str.sh`
-  - `cross-crate-demo/bin-fat-lto/static_option_u8.sh`
-  - `cross-crate-demo/bin-fat-lto/static_str.sh`
-  - `cross-crate-demo/bin-fat-lto/literal_str.sh`
+  - `cross-crate-demo-problem/bin/invocation_scripts/static_option_u8.sh`
+  - `cross-crate-demo-problem/bin/invocation_scripts/static_str.sh`
+  - `cross-crate-demo-problem/bin/invocation_scripts/literal_str.sh`
+  - `cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_option_u8.sh`
+  - `cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_str.sh`
+  - `cross-crate-demo-problem/bin-fat-lto/invocation_scripts/literal_str.sh`
 - validate the versioning convention:
   - [`pre-commit`](./pre-commit)
 
