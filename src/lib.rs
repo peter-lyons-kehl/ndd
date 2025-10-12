@@ -34,16 +34,23 @@ use core::marker::PhantomData;
 /// fn caller<'a>(r: &'a u8) { let u = 0u8; callee(NonDeDuplicatedStatic::new(uref)); }
 /// ```
 ///
-/// But, by requiring `NonDeDuplicated`'s generic parameter `T` to implement [Any] the first
-/// example above fails, too. That prevents mistakes earlier.
+/// But, by requiring `NonDeDuplicatedFlexible`'s generic parameter `FROM` (or `NonDeDuplicated`'s
+/// generic parameter `T`) to implement [Any] the first example above fails, too. That prevents
+/// mistakes earlier.
+///
+/// Do not use [NonDeDuplicatedFlexible] directly. Instead, use [NonDeDuplicated],
+/// [NonDeDuplicatedStr] and [NonDeDuplicatedCStr].
 #[repr(transparent)]
-pub struct NonDeDuplicatedFlexible<FROM, OWN: Any + Send + Sync, TO: Any + ?Sized> {
+pub struct NonDeDuplicatedFlexible<FROM, OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> {
     cell: Cell<OWN>,
     _f: PhantomData<FROM>,
     _t: PhantomData<TO>,
 }
 
-pub type NonDeDuplicated<T> = NonDeDuplicatedFlexible<T, T, T>;
+/// For non-de-duplicated objects stored in `static` variables. NOT for string slices - for those
+/// use [NonDeDuplicatedStr] and [NonDeDuplicatedCStr].
+#[allow(type_alias_bounds)]
+pub type NonDeDuplicated<T: Any + Send + Sync> = NonDeDuplicatedFlexible<T, T, T>;
 
 impl<T: Any + Send + Sync> NonDeDuplicated<T> {
     /// Construct a new instance.
@@ -64,8 +71,10 @@ impl<T: Any + Send + Sync> NonDeDuplicated<T> {
     }
 }
 
-pub type NonDeDuplicatedStr<const N: usize> = NonDeDuplicatedFlexible<&'static str, [u8; N], str>;
-impl<const N: usize> NonDeDuplicatedStr<N> {
+/// For non-de-duplicated string slices stored in `static` variables.
+pub type NonDeDuplicatedStr<'from, const N: usize> =
+    NonDeDuplicatedFlexible<&'from str, [u8; N], str>;
+impl<'from, const N: usize> NonDeDuplicatedStr<'from, N> {
     /// Construct a new instance.
     pub const fn new(s: &str) -> Self {
         if s.len() > N {
@@ -117,23 +126,25 @@ impl<const N: usize> NonDeDuplicatedStr<N> {
     }
 }
 
-/// For now, [Sync] requires that `OWN` is both [Sync] AND [Send], following
+/// For now, [Sync] (and [NonDeDuplicatedFlexible] in general) requires that `OWN` is both [Sync]
+/// AND [Send], following
 /// [std::sync::Mutex](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E).
 /// However, from <https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html> it seems that `T:
 /// Send` may be unnecessary? Please advise.
 ///
-/// Either way, [NonDeDuplicated] exists specifically for static variables. Those get never moved
-/// out. So, unlike [std::sync::Mutex], [NonDeDuplicated] itself doesn't need to implement [Send].
+/// Either way, [NonDeDuplicated], [NonDeDuplicatedStr] and [NonDeDuplicatedCStr] (and underlying
+/// [NonDeDuplicatedFlexible]) exist specifically for static variables. Those get never moved out.
+/// So, (unlike [std::sync::Mutex]) they do **not** need to implement [Send].
 ///
 /// Also, unclear if `TO` needs to be [Send] and [Sync].
-unsafe impl<FROM, OWN: Any + Send + Sync, TO: Any + ?Sized> Sync
+unsafe impl<FROM, OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> Sync
     for NonDeDuplicatedFlexible<FROM, OWN, TO>
 {
 }
 
-/// [NonDeDuplicated] is intended for `static` (immutable) variables only. So [Drop::drop] panics in
-/// debug/miri builds.
-impl<FROM, OWN: Any + Send + Sync, TO: Any + ?Sized> Drop
+/// [NonDeDuplicated] and friends are intended for `static` (immutable) variables only. So
+/// [Drop::drop] panics in debug/miri builds.
+impl<FROM, OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> Drop
     for NonDeDuplicatedFlexible<FROM, OWN, TO>
 {
     fn drop(&mut self) {
