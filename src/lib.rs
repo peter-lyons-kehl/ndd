@@ -1,5 +1,8 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(any(doc, test)), no_std)]
+#![feature(adt_const_params)]
+#![feature(unsized_const_params)]
+#![feature(generic_const_exprs)]
 
 use core::any::Any;
 use core::cell::Cell;
@@ -35,23 +38,22 @@ use core::marker::PhantomData;
 /// fn caller<'a>(r: &'a u8) { let u = 0u8; callee(NonDeDuplicatedStatic::new(uref)); }
 /// ```
 ///
-/// But, by requiring `NonDeDuplicatedFlexible`'s generic parameter `FROM` (or `NonDeDuplicated`'s
+/// But, by requiring [NonDeDuplicatedFlexible]'s generic parameter `OWN` (or [NonDeDuplicated]'s
 /// generic parameter `T`) to implement [Any] the first example above fails, too. That prevents
 /// mistakes earlier.
 ///
 /// Do not use [NonDeDuplicatedFlexible] directly. Instead, use [NonDeDuplicated],
 /// [NonDeDuplicatedStr] and [NonDeDuplicatedCStr].
 #[repr(transparent)]
-pub struct NonDeDuplicatedFlexible<FROM, OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> {
+pub struct NonDeDuplicatedFlexible<OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> {
     cell: Cell<OWN>,
-    _f: PhantomData<FROM>,
     _t: PhantomData<TO>,
 }
 
 /// For non-de-duplicated objects stored in `static` variables. NOT for string slices - for those
 /// use [NonDeDuplicatedStr] and [NonDeDuplicatedCStr].
 #[allow(type_alias_bounds)]
-pub type NonDeDuplicated<T: Any + Send + Sync> = NonDeDuplicatedFlexible<T, T, T>;
+pub type NonDeDuplicated<T: Any + Send + Sync> = NonDeDuplicatedFlexible<T, T>;
 
 impl<T: Any + Send + Sync> NonDeDuplicated<T> {
     /// Construct a new instance.
@@ -60,7 +62,6 @@ impl<T: Any + Send + Sync> NonDeDuplicated<T> {
             //Using core::hint::black_box() seems unnecessary.
             //cell: Cell::new(core::hint::black_box(value)),
             cell: Cell::new(value),
-            _f: PhantomData,
             _t: PhantomData,
         }
     }
@@ -112,14 +113,12 @@ const fn bytes_to_array<const N: usize>(bytes: &[u8]) -> [u8; N] {
 }
 
 /// For non-de-duplicated string slices stored in `static` variables.
-pub type NonDeDuplicatedStr<'from, const N: usize> =
-    NonDeDuplicatedFlexible<&'from str, [u8; N], str>;
-impl<'from, const N: usize> NonDeDuplicatedStr<'from, N> {
+pub type NonDeDuplicatedStr<const N: usize> = NonDeDuplicatedFlexible<[u8; N], str>;
+impl<const N: usize> NonDeDuplicatedStr<N> {
     /// Construct a new instance.
     pub const fn new(s: &str) -> Self {
         Self {
             cell: Cell::new(bytes_to_array(s.as_bytes())),
-            _f: PhantomData,
             _t: PhantomData,
         }
     }
@@ -139,15 +138,32 @@ impl<'from, const N: usize> NonDeDuplicatedStr<'from, N> {
     }
 }
 
+#[repr(transparent)]
+struct NddStr<const S: &'static str>(NonDeDuplicatedStr<{ S.len() }>)
+where
+    [(); S.len()]: Any;
+impl<'from, const S: &'static str> NddStr<S>
+where
+    [(); S.len()]: Any,
+{
+    pub const fn new() -> Self {
+        Self(NonDeDuplicatedStr::new(S))
+    }
+
+    pub const fn get(&self) -> &str {
+        self.0.get()
+    }
+}
+static NDShehe1: NddStr<"hehe"> = NddStr(NonDeDuplicatedStr::new("hehe"));
+static NDShehe2: NddStr<"hehe"> = NddStr::new();
+
 /// For non-de-duplicated string slices stored in `static` variables.
-pub type NonDeDuplicatedCStr<'from, const N: usize> =
-    NonDeDuplicatedFlexible<&'from CStr, [u8; N], CStr>;
-impl<'from, const N: usize> NonDeDuplicatedCStr<'from, N> {
+pub type NonDeDuplicatedCStr<const N: usize> = NonDeDuplicatedFlexible<[u8; N], CStr>;
+impl<const N: usize> NonDeDuplicatedCStr<N> {
     /// Construct a new instance.
     pub const fn new(s: &CStr) -> Self {
         Self {
             cell: Cell::new(bytes_to_array(s.to_bytes())),
-            _f: PhantomData,
             _t: PhantomData,
         }
     }
@@ -178,15 +194,15 @@ impl<'from, const N: usize> NonDeDuplicatedCStr<'from, N> {
 /// So, (unlike [std::sync::Mutex]) they do **not** need to implement [Send].
 ///
 /// Also, unclear if `TO` needs to be [Send] and [Sync].
-unsafe impl<FROM, OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> Sync
-    for NonDeDuplicatedFlexible<FROM, OWN, TO>
+unsafe impl<OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> Sync
+    for NonDeDuplicatedFlexible<OWN, TO>
 {
 }
 
 /// [NonDeDuplicated] and friends are intended for `static` (immutable) variables only. So
 /// [Drop::drop] panics in debug/miri builds.
-impl<FROM, OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> Drop
-    for NonDeDuplicatedFlexible<FROM, OWN, TO>
+impl<OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> Drop
+    for NonDeDuplicatedFlexible<OWN, TO>
 {
     fn drop(&mut self) {
         // If the client uses Box::leak() or friends, then drop() will NOT happen. That is OK: A
