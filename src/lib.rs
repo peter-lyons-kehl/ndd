@@ -3,6 +3,7 @@
 
 use core::any::Any;
 use core::cell::Cell;
+use core::ffi::CStr;
 use core::marker::PhantomData;
 
 /// A zero-cost  wrapper guaranteed not to share its memory location with any other valid (in-scope)
@@ -71,41 +72,53 @@ impl<T: Any + Send + Sync> NonDeDuplicated<T> {
     }
 }
 
+/// Separate from [bytes_to_array], so that we help monomorphization surface area to be smaller.
+const fn copy_bytes_to_array(to: &mut [u8], from: &[u8], len: usize) {
+    if from.len() > len {
+        let msg = match from.len() - len {
+            1 => "Target length is 1 byte too small.",
+            2 => "Target length is 2 bytes too small.",
+            3 => "Target length is 3 bytes too small.",
+            4 => "Target length is 4 bytes too small.",
+            _ => "Target length is more than 4 bytes too small.",
+        };
+        panic!("{}", msg)
+    }
+    if from.len() < len {
+        let msg = match len - from.len() {
+            1 => "Target length is 1 byte too large.",
+            2 => "Target length is 2 bytes too large.",
+            3 => "Target length is 3 bytes too large.",
+            4 => "Target length is 4 bytes too large.",
+            _ => "Target length is more than 4 bytes too large.",
+        };
+        panic!("{}", msg)
+    }
+    if to.len() != len {
+        panic!("Target slice length differs to the specified length.")
+    }
+
+    let mut i = 0;
+    while i < len {
+        to[i] = from[i];
+        i += 1;
+    }
+}
+
+const fn bytes_to_array<const N: usize>(bytes: &[u8]) -> [u8; N] {
+    let mut arr = [0u8; N];
+    copy_bytes_to_array(&mut arr, bytes, N);
+    arr
+}
+
 /// For non-de-duplicated string slices stored in `static` variables.
 pub type NonDeDuplicatedStr<'from, const N: usize> =
     NonDeDuplicatedFlexible<&'from str, [u8; N], str>;
 impl<'from, const N: usize> NonDeDuplicatedStr<'from, N> {
     /// Construct a new instance.
     pub const fn new(s: &str) -> Self {
-        if s.len() > N {
-            let msg = match s.len() - N {
-                1 => "N is 1 byte too small.",
-                2 => "N is 2 bytes too small.",
-                3 => "N is 3 bytes too small.",
-                4 => "N is 4 bytes too small.",
-                _ => "N is more than 4 bytes too small.",
-            };
-            panic!("{}", msg)
-        }
-        if s.len() < N {
-            let msg = match N - s.len() {
-                1 => "N is 1 byte too large.",
-                2 => "N is 2 bytes too large.",
-                3 => "N is 3 bytes too large.",
-                4 => "N is 4 bytes too large.",
-                _ => "N is more than 4 bytes too large.",
-            };
-            panic!("{}", msg)
-        }
-        let bytes: &[u8] = s.as_bytes();
-        let mut arr = [0u8; N];
-        let mut i = 0;
-        while i < bytes.len() {
-            arr[i] = bytes[i];
-            i += 1;
-        }
         Self {
-            cell: Cell::new(arr),
+            cell: Cell::new(bytes_to_array(s.as_bytes())),
             _f: PhantomData,
             _t: PhantomData,
         }
@@ -114,12 +127,40 @@ impl<'from, const N: usize> NonDeDuplicatedStr<'from, N> {
     /// Get a reference.
     ///
     /// Implementation details: Since this type, and this function, is intended to be used for
-    /// `static` or `const` variables, speed doesn't matter. So, we use [core::str::from_utf8]
+    /// `static` variables only, speed doesn't matter here. So, we use [core::str::from_utf8]
     /// (instead of [core::str::from_utf8_unchecked]).
     pub const fn get(&self) -> &str {
         let ptr = self.cell.as_ptr();
         let bytes = unsafe { &*ptr };
         match core::str::from_utf8(bytes) {
+            Ok(s) => s,
+            Err(_) => unreachable!(),
+        }
+    }
+}
+
+/// For non-de-duplicated string slices stored in `static` variables.
+pub type NonDeDuplicatedCStr<'from, const N: usize> =
+    NonDeDuplicatedFlexible<&'from CStr, [u8; N], CStr>;
+impl<'from, const N: usize> NonDeDuplicatedCStr<'from, N> {
+    /// Construct a new instance.
+    pub const fn new(s: &CStr) -> Self {
+        Self {
+            cell: Cell::new(bytes_to_array(s.to_bytes())),
+            _f: PhantomData,
+            _t: PhantomData,
+        }
+    }
+
+    /// Get a reference.
+    ///
+    /// Implementation details: Since this type, and this function, is intended to be used for
+    /// `static` variables only, speed doesn't matter here. So, we use [CStr::from_bytes_with_nul]
+    /// (instead of [CStr::from_bytes_with_nul_unchecked]).
+    pub const fn get(&self) -> &CStr {
+        let ptr = self.cell.as_ptr();
+        let bytes = unsafe { &*ptr };
+        match CStr::from_bytes_with_nul(bytes) {
             Ok(s) => s,
             Err(_) => unreachable!(),
         }

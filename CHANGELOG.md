@@ -7,7 +7,11 @@ This reflects GIT commits on `main` branch (the default branch), that is, `stabl
 [`nightly` GIT branch](https://github.com/peter-lyons-kehl/ndd/tree/nightly) may occasionally be
 behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 0.2.6 (stable) and 0.3.6-nightly
+## 0.2.7 (stable) and 0.3.7-nightly
+
+`NonDeDuplicatedCStr` for FFI CStr.
+
+## 0.2.6 (stable)
 
 - Renamed `cross-crate-demo` -> `cross-crate-demo-problem`.
 - Moved `cross-crate-demo/bin*/*.sh` scripts one level deeper to `invocation_scripts`.
