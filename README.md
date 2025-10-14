@@ -273,7 +273,7 @@ Alpine Linux and are POSIX-compliant:
   - fix:
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     literal_str`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_str`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release literal_st`r
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release literal_str`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_str`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_option_u8`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_option_u8`

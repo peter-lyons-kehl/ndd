@@ -45,4 +45,13 @@ jobs:
           cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_option_u8
           cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_bytes
           cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_bytes
+
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     literal_str
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_str
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release literal_str
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_str
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_option_u8
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_option_u8
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_bytes
+          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_bytes
         shell: sh
