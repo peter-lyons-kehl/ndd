@@ -1,8 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(any(doc, test)), no_std)]
-#![feature(adt_const_params)]
-#![feature(unsized_const_params)]
-#![feature(generic_const_exprs)]
+#![allow(incomplete_features)]
 
 use core::any::Any;
 use core::cell::Cell;
@@ -138,25 +136,6 @@ impl<const N: usize> NonDeDuplicatedStr<N> {
     }
 }
 
-#[repr(transparent)]
-struct NddStr<const S: &'static str>(NonDeDuplicatedStr<{ S.len() }>)
-where
-    [(); S.len()]: Any;
-impl<'from, const S: &'static str> NddStr<S>
-where
-    [(); S.len()]: Any,
-{
-    pub const fn new() -> Self {
-        Self(NonDeDuplicatedStr::new(S))
-    }
-
-    pub const fn get(&self) -> &str {
-        self.0.get()
-    }
-}
-static NDShehe1: NddStr<"hehe"> = NddStr(NonDeDuplicatedStr::new("hehe"));
-static NDShehe2: NddStr<"hehe"> = NddStr::new();
-
 /// For non-de-duplicated string slices stored in `static` variables.
 pub type NonDeDuplicatedCStr<const N: usize> = NonDeDuplicatedFlexible<[u8; N], CStr>;
 impl<const N: usize> NonDeDuplicatedCStr<N> {
@@ -166,6 +145,30 @@ impl<const N: usize> NonDeDuplicatedCStr<N> {
             cell: Cell::new(bytes_to_array(s.to_bytes())),
             _t: PhantomData,
         }
+    }
+
+    /// The given `arr` must be a well-formed C string, that is,
+    /// - **not** containing any internal NUL bytes, and
+    /// - end with a NUL byte, like `b"abc\0"`.
+    pub const fn new_from_bytes(arr: [u8; N]) -> Self {
+        // Validate early, rather than waiting for validation by .get()
+        let _ = core::hint::black_box(CStr::from_bytes_with_nul(&arr));
+        Self {
+            cell: Cell::new(arr),
+            _t: PhantomData,
+        }
+    }
+
+    ///  The `given &`[str] must, like C string, not contain any internal NUL bytes. However, do
+    ///  **not** include the trailing NUL byte - that is added automatically.
+    pub const fn new_from_str(s: &str) -> Self {
+        let mut arr = [0u8; N];
+        if let Some((_, sub_slice)) = (&mut arr).split_last_mut() {
+            crate::copy_bytes_to_array(sub_slice, s.as_bytes(), s.len());
+        } else {
+            unreachable!()
+        }
+        Self::new_from_bytes(arr)
     }
 
     /// Get a reference.

@@ -28,10 +28,21 @@ jobs:
           rustup install nightly --profile minimal
           rustup +nightly component add miri
           cargo +nightly miri test
-          cross-crate-demo-problem/bin/invocation_scripts/static_option_u8.sh
-          cross-crate-demo-problem/bin/invocation_scripts/static_str.sh
-          cross-crate-demo-problem/bin/invocation_scripts/literal_str.sh
-          cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_option_u8.sh
-          cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_str.sh
-          cross-crate-demo-problem/bin-fat-lto/invocation_scripts/literal_str.sh
+          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     literal_str
+          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release literal_str
+          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_str
+          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_str
+          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_option_u8
+          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_option_u8
+          cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh dev     const_bytes
+          cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh release const_bytes
+
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     literal_str
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release literal_str
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_str
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_str
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_option_u8
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_option_u8
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_bytes
+          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_bytes
         shell: sh

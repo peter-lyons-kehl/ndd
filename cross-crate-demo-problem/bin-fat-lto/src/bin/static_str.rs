@@ -1,1 +1,0 @@
-../../../bin-shared/src/bin/static_str.rs

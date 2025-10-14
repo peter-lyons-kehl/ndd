@@ -13,41 +13,47 @@ address**.
 ## Problem
 
 Rust (or, rather, LLVM) by default de-duplicates or reuses **addresses** of `static` variables in
-`release` builds. And somewhat in `debug` builds, too. For most purposes that is good: The result
-binary is smaller, and because of more successful cache hits, the execution is faster.
+`release` builds. And somewhat in `dev` (debug) builds, too. For most purposes that is good: The
+result binary is smaller, and because of more successful cache hits, the execution is faster.
 
 However, that is counter-productive when the code identifies/compares `static` data by memory
-address of the reference (whether a Rust reference/slice, or a pointer/pointer range). For example,
-an existing Rust/3rd party API may accept ("ordinary") references/slices. You may want to extend
-that API's protocol/behavior with signalling/special handling when the client sends in your
-designated `static` variable by reference/slice/pointer/pointer range. (Your special handler may
-cast such references/slices to pointers and compare them by address with
+address of the reference (whether a Rust reference/slice, a pointer/pointer range, or the pointer
+casted to `usize`). For example, an existing Rust/3rd party API may accept ("ordinary")
+references/slices. You may want to extend that API's protocol/behavior with signalling/special
+handling when the client sends in your designated `static` variable by
+reference/slice/pointer/pointer range. (Your special handler may cast such references/slices to
+pointers and compare them by address with
 [`core::ptr::eq()`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html) or
 [`core::ptr::addr_eq()`](https://doc.rust-lang.org/nightly/core/ptr/fn.addr_eq.html).)
 
 Then you do **not want** the client, nor the compiler/LLVM, to reuse/share the memory address of
 such a designated `static` for any other ("ordinary") `static` or `const` values/expressions, or
-local numerical/character/byte/string slice literals. That does work out of the box when the client
-passes a reference/slice defined as `static`: each `static` gets its own memory space (even with the
-default `release` optimizations). See a test [`src/lib.rs` ->
+local numerical/character/byte/string/c-string slice literals. Otherwise an "ordinary" invocation of
+the API could trigger your designated signalling unintentionally.
+
+That does work out of the box when the client passes a reference/slice defined as `static`: each
+`static` gets its own memory space (even with the default `release` optimizations). See a test
+[`src/lib.rs` ->
 `addresses_unique_between_statics()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L72).
 
-However, there is a problem (in `release` mode, and for some types even in `debug` mode). It affects
-("ordinary") `const` values/expressions that equal in value to any `static` (which may be your
-designated `static`). Rust/LLVM re-uses address of one such matching `static`' for references to any
-equal value(s) defined as `const`. See a test [`src/lib.rs` ->
+However, there is a problem (caused by de-duplication in `release`, and for some types even in `dev
+or `miri`). It affects ("ordinary") `const` values/expressions that equal in value to any `static`
+(whether it's a `static` variable, or a static literal), which may be your designated `static`.
+Rust/LLVM re-uses address of one such matching `static` for references to any equal value(s) defined
+as `const`. See a test [`src/lib.rs` ->
 `addresses_not_unique_between_const_and_static()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L95).
-Such `const`, `static` or literal could be in 3rd party code, and private - not even exported (see
-[`cross-crate-demo-problem`](cross-crate-demo-problem))!
+Such `const`, `static` or literal could be in 3rd party, and even in private (not exported), code
+(see [`cross_crate_demo_bug`](cross_crate_demo_bug))!
 
-Things get worse: `debug` builds don't have this consistent:
+Things get worse: `dev` builds don't have this consistent:
 
-- For some types (`u8`, numeric primitive-based enums) `debug` builds don't reuse `static` addresses
+- For some types (`u8`, numeric primitive-based enums) `dev` builds don't reuse `static` addresses
   for references/slices to `const` values. But
-- For other types (`str`), `debug` builds do reuse them...
+- For other types (`str`), `dev` builds do reuse them...
 
-`MIRI` reuses `static` addresses even less (than `debug` does), but it still does reuse them
-sometimes - for example, between byte literals (`b"Hello"`) and equal string literals (`"Hello"`).
+`MIRI` reuses `static` addresses even less (than `dev` does), but it still does reuse them sometimes
+- for example, between byte (`&CStr`) literals (`b"Hello"`) and equal string (`&str`) literals
+  (technically, subslices: `"Hello"`).
 
 Even worse so: `release` builds don't have this consistent. De-duplication across crates depends on
 "fat" link time optimization (LTO):
@@ -55,6 +61,15 @@ Even worse so: `release` builds don't have this consistent. De-duplication acros
 ```toml
 [profile.release]
 lto = "fat"
+```
+
+For `dev` builds cross-crate de-duplication depends on "fat" link time optimization (LTO) AND
+`opt-level` being 2 or higher:
+
+```toml
+[profile.dev]
+lto = "fat"
+opt-level = 2
 ```
 
 ## Solution
@@ -79,7 +94,7 @@ See a test [`src/lib.rs` ->
 Use `ndd::NonDeDuplicated` to wrap your static data. Use it for (immutable) `static` variables only.
 Do **not** use it for locals or on heap. That is validated by implementation of
 [core::ops::Drop](https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html), which `panic`-s in
-debug builds.
+`dev` builds.
 
 See unit tests in [src/lib.rs](src/lib.rs).
 
@@ -196,7 +211,8 @@ use an asterisk mask for the minor version, like `0.2.*`. But then you lose auto
 
 Functionality of odd-numbered major (`-nightly`) versions is always subject to change.
 
-The following extra functionality is available on `0.3.1-nightly`:
+The following extra functionality is available on `0.3.1-nightly`. You need `nightly` Rust toolchain
+(of course).
 
 #### as_array_of_cells
 
@@ -212,16 +228,18 @@ Similar to `as_array_of_cells`, `ndd::NonDeDuplicated` has function `as_slice_of
 
 #### const Deref and From
 
-With `nightly` Rust toolchain and use of `--ignore-rust-version` you can get
 [core::ops::Deref](https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html) and
-[core::convert::From](https://doc.rust-lang.org/nightly/core/convert/trait.From.html) implemented as
-`const`. As of mid 2025, `const` traits are having high traction in Rust. Hopefully this will be
-stable not in years, but sooner.
+[core::convert::From](https://doc.rust-lang.org/nightly/core/convert/trait.From.html) are
+implemented as `const`. As of mid 2025, `const` traits are having high traction in Rust. Hopefully
+this will be stable not in years, but sooner.
+
+These traits are **not** implemented in stable versions at all. Why? Because `ndd` types are
+intended for `static` variables, so non-`const` functions don't help us.
 
 ## Quality
 
 Checks and tests are run by [GitHub Actions (CI)](.github/workflows/main.yml). All scripts run on
-Alpine Linux and are POSIX-compliant.
+Alpine Linux and are POSIX-compliant:
 
 - `cargo clippy`
 - `cargo fmt --check`
@@ -232,13 +250,35 @@ Alpine Linux and are POSIX-compliant.
   - `rustup install nightly --profile minimal`
   - `rustup +nightly component add miri`
   - `cargo +nightly miri test`
-- `release`-only demonstration:
-  - `cross-crate-demo-problem/bin/invocation_scripts/static_option_u8.sh`
-  - `cross-crate-demo-problem/bin/invocation_scripts/static_str.sh`
-  - `cross-crate-demo-problem/bin/invocation_scripts/literal_str.sh`
-  - `cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_option_u8.sh`
-  - `cross-crate-demo-problem/bin-fat-lto/invocation_scripts/static_str.sh`
-  - `cross-crate-demo-problem/bin-fat-lto/invocation_scripts/literal_str.sh`
+- demonstration of the problem and fix:
+  - standard optimization for `dev` and `release` builds: most do not get de-duplicated:
+    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     literal_str`
+    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release literal_str`
+    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_str`
+    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_str`
+    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_option_u8`
+    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_option_u8`
+  - but, some types do get de-duplicated even in standard `dev` and `release`:
+    - `cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh dev     const_bytes`
+    - `cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh release const_bytes`
+  - `release` with Fat LTO (and `dev` with Fat LTO and `opt-level` set to `2`): deduplicated:
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     literal_str`
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_str`
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release literal_st`r
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_str`
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_option_u8`
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_option_u8`
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_bytes`
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_bytes`
+  - fix:
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     literal_str`
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_str`
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release literal_st`r
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_str`
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_option_u8`
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_option_u8`
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_bytes`
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_bytes`
 - validate the versioning convention:
   - [`pre-commit`](./pre-commit)
 

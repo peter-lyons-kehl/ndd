@@ -7,14 +7,25 @@ This reflects GIT commits on `main` branch (the default branch), that is, `stabl
 [`nightly` GIT branch](https://github.com/peter-lyons-kehl/ndd/tree/nightly) may occasionally be
 behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 
+<!--
+## 0.3.7-nightly
+
+`ndd::infer::NonDeDuplicatedStr` and `ndd::infer::NonDeDuplicatedCStr`
+-->
+
 ## 0.2.7 (stable) and 0.3.7-nightly
 
-`NonDeDuplicatedCStr` for FFI CStr.
+- `NonDeDuplicatedCStr` for FFI
+  [`core::ffi::CStr`](https://doc.rust-lang.org/nightly/core/ffi/struct.CStr.html)
+- Renamed `cross-crate-demo-problem/` to `cross_crate_demo_bug/`.
+- [`cross_crate_shared_scripts/`](cross_crate_shared_scripts/)
+- Created `cross_crate_demo_fix/`, added to `README.md` and GitHub actions.
 
 ## 0.2.6 (stable)
 
 - Renamed `cross-crate-demo` -> `cross-crate-demo-problem`.
-- Moved `cross-crate-demo/bin*/*.sh` scripts one level deeper to `invocation_scripts`.
+- Moved `cross-crate-demo/bin*/*.sh` scripts one level deeper to `invocation_scripts` (later moved
+  to `cross_crate_shared_scripts/`).
 - API
 - `NonDeDuplicatedStr`
 
@@ -23,8 +34,8 @@ behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 - `NonDeDuplicated`'s generic parameter `T` must now implement
   [`core::any::Any`](https://doc.rust-lang.org/nightly/core/any/trait.Any.html).
 - Tests with [MIRI](https://github.com/rust-lang/miri).
-- [`cross-crate-demo`](cross-crate-demo/) demonstrates effect of Fat LTO (Link Time Optimization)
-  across crates. Also invoked from GitHub Actions.
+- `cross-crate-demo/` (later renamed to `cross_crate_demo_bug/`) demonstrates effect of Fat LTO
+  (Link Time Optimization) across crates. Also invoked from GitHub Actions.
 - Docs.
 
 ## 0.2.4 (stable)

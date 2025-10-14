@@ -1,0 +1,10 @@
+[package]
+name = "callee"
+version = "0.1.0"
+edition = "2024"
+
+[lints.rust]
+unexpected_cfgs = { level = "forbid"}
+
+[dependencies]
+ndd = {version = "0.*", path = "../.."}

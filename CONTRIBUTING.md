@@ -27,4 +27,4 @@ branch](https://github.com/peter-lyons-kehl/ndd/tree/nightly).
 ## File formatting
 
 - Use `cargo fmt` for Rust source.
-- Leave one empty line at the end of Rust, Markdown and any other source files.
+- Leave one empty line at the end of Rust, Markdown, Toml, Yaml and any other source/config files.
