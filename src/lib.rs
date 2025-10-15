@@ -1,9 +1,26 @@
-// OVerride links, so that rustdoc can point them locally (or to docs.io, if run on docs.io).
-//! [`src/lib.rs` -> `addresses_unique_between_statics()`]:
-//!     https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L246
+// Override link URLs for local rustdoc and for docs.rs.
+//
+// Keep the following links in the same order as they appear in ../README.md. See also bottom of
+// ../README.md.
+//! [`ndd::NonDeDuplicated`]: crate::NonDeDuplicated
+//! [`ndd::NonDeDuplicatedStr`]: crate::NonDeDuplicatedStr
+//! [`ndd::NonDeDuplicatedCStr`]: crate::NonDeDuplicatedCStr
+//!
+//! [`core::ptr::eq`]: core::ptr::eq
+//! [`core::ptr::addr_eq`]: core::ptr::addr_eq
+//! [`core::cell::Cell`]: core::cell::Cell
+//! [`core::marker::Sync`]: core::marker::Sync
+//! [`core::marker::Send`]: core::marker::Send
+//! [`std::sync::Mutex`]: std::sync::Mutex#impl-Sync-for-Mutex<T>
+//! [`alloc`]: alloc
+//! [`core::ops::Drop`]: core::ops::Drop
+//! [`core::cell::Cell::as_array_of_cells`]: core::cell::Cell::as_array_of_cells
+//! [`core::ops::Deref`]: core::ops::Deref
+//! [`core::convert::From`]: core::convert::From
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(any(doc, test)), no_std)]
-#![allow(incomplete_features)]
+#[cfg(doc)]
+extern crate alloc;
 
 use core::any::Any;
 use core::cell::Cell;
@@ -237,7 +254,7 @@ mod tests_shared {
 
 /// These tests don't actually test `ndd`, but they test the behavior **without** `ndd`.
 #[cfg(test)]
-mod tests_behavior_without_ndd {
+mod tests_without_ndd {
     use crate::tests_shared::{STR_CONST_FROM_BYTE_ARRAY_HI, STR_CONST_FROM_BYTE_STRING_HELLO};
     use core::ptr;
 
@@ -332,7 +349,7 @@ mod tests_behavior_without_ndd {
 }
 
 #[cfg(test)]
-mod tests_behavior_with_ndd {
+mod tests_with_ndd {
     use super::*;
     use crate::tests_shared::{STR_CONST_FROM_BYTE_ARRAY_HI, STR_CONST_FROM_BYTE_STRING_HELLO};
     use core::ptr;

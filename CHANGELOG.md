@@ -13,6 +13,10 @@ behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 `ndd::infer::NonDeDuplicatedStr` and `ndd::infer::NonDeDuplicatedCStr`
 -->
 
+## 0.2.9 (stable)
+
+`README.md` links to work on both GitHub and `rustdoc` or `crates.io` (more).
+
 ## 0.2.8 (stable)
 
 `README.md` links to work on both GitHub and `rustdoc` or `crates.io`.
