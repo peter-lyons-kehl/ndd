@@ -22,9 +22,7 @@ casted to `usize`). For example, an existing Rust/3rd party API may accept ("ord
 references/slices. You may want to extend that API's protocol/behavior with signalling/special
 handling when the client sends in your designated `static` variable by
 reference/slice/pointer/pointer range. (Your special handler may cast such references/slices to
-pointers and compare them by address with
-[`core::ptr::eq()`](https://doc.rust-lang.org/nightly/core/ptr/fn.eq.html) or
-[`core::ptr::addr_eq()`](https://doc.rust-lang.org/nightly/core/ptr/fn.addr_eq.html).)
+pointers and compare them by address with [`core::ptr::eq`] or [`core::ptr::addr_eq`].)
 
 Then you do **not want** the client, nor the compiler/LLVM, to reuse/share the memory address of
 such a designated `static` for any other ("ordinary") `static` or `const` values/expressions, or
@@ -33,8 +31,7 @@ the API could trigger your designated signalling unintentionally.
 
 That does work out of the box when the client passes a reference/slice defined as `static`: each
 `static` gets its own memory space (even with the default `release` optimizations). See a test
-[`src/lib.rs` ->
-`addresses_unique_between_statics()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L72).
+[`src/lib.rs` -> `addresses_unique_between_statics()`].
 
 However, there is a problem (caused by de-duplication in `release`, and for some types even in `dev
 or `miri). It affects ("ordinary") `const` values/expressions that equal in value to any `static`
@@ -86,8 +83,8 @@ access, and it never mutates the inner data. That is similar to how
 [`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E)
 implements `Sync`, too.
 
-See a test [`src/lib.rs` ->
-`addresses_unique_between_const_and_ndd()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L102).
+See [`src/lib.rs` ->
+`tests_behavior_with_ndd`](https://github.com/search?q=repo%3Apeter-lyons-kehl%2Fndd+tests_behavior_with_ndd+path%3Asrc%2Flib.rs&type=code).
 
 ## Use
 
@@ -297,3 +294,10 @@ Please subscribe for low frequency updates at
 The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr(&self)` is now
 `const` function: pull request
 [rust-lang/rust#146904](https://github.com/rust-lang/rust/pull/146904).
+
+[`core::ptr::eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.eq.html
+[`core::ptr::eq`-NOT-USED_YET]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.addr_eq.html
+<!--
+[`src/lib.rs` -> `addresses_unique_between_statics()`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L246
+-->
+[`src/lib.rs` -> `addresses_unique_between_statics()`]: src/lib.rs#L246

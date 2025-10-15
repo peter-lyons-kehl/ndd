@@ -1,3 +1,5 @@
+// OVerride links, so that rustdoc can point them locally (or to docs.io, if run on docs.io).
+//! [`src/lib.rs` -> `addresses_unique_between_statics()`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L246
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(any(doc, test)), no_std)]
 #![allow(incomplete_features)]
