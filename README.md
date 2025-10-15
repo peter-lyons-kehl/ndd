@@ -296,8 +296,5 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
 [rust-lang/rust#146904](https://github.com/rust-lang/rust/pull/146904).
 
 [`core::ptr::eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.eq.html
-[`core::ptr::eq`-NOT-USED_YET]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.addr_eq.html
-<!--
-[`src/lib.rs` -> `addresses_unique_between_statics()`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L246
--->
+[`core::ptr::addr_eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.addr_eq.html
 [`src/lib.rs` -> `addresses_unique_between_statics()`]: src/lib.rs#L246

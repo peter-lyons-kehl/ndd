@@ -13,7 +13,11 @@ behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 `ndd::infer::NonDeDuplicatedStr` and `ndd::infer::NonDeDuplicatedCStr`
 -->
 
-## 0.2.7 (stable) and 0.3.7-nightly
+## 0.2.8 (stable)
+
+`README.md` links to work on both GitHub and `rustdoc` or `crates.io`.
+
+## 0.2.7 (stable)
 
 - `NonDeDuplicatedCStr` for FFI
   [`core::ffi::CStr`](https://doc.rust-lang.org/nightly/core/ffi/struct.CStr.html)
