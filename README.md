@@ -37,13 +37,13 @@ That does work out of the box when the client passes a reference/slice defined a
 `addresses_unique_between_statics()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L72).
 
 However, there is a problem (caused by de-duplication in `release`, and for some types even in `dev
-or `miri`). It affects ("ordinary") `const` values/expressions that equal in value to any `static`
+or `miri). It affects ("ordinary") `const` values/expressions that equal in value to any `static`
 (whether it's a `static` variable, or a static literal), which may be your designated `static`.
 Rust/LLVM re-uses address of one such matching `static` for references to any equal value(s) defined
 as `const`. See a test [`src/lib.rs` ->
 `addresses_not_unique_between_const_and_static()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L95).
-Such `const`, `static` or literal could be in 3rd party, and even in private (not exported), code
-(see [`cross_crate_demo_bug`](cross_crate_demo_bug))!
+Such `const`, `static` or literal could be in 3rd party code, even private. (See
+[`cross_crate_demo_bug/`](https://github.com/peter-lyons-kehl/ndd/tree/main/cross_crate_demo_bug))!
 
 Things get worse: `dev` builds don't have this consistent:
 

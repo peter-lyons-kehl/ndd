@@ -216,27 +216,27 @@ impl<OWN: Any + Send + Sync, TO: Any + Send + Sync + ?Sized> Drop
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod tests_shared {
+    pub const STR_CONST_FROM_BYTE_ARRAY_HI: &str = {
+        match str::from_utf8(&[b'H', b'i']) {
+            Ok(s) => s,
+            Err(_) => unreachable!(),
+        }
+    };
+
+    pub const STR_CONST_FROM_BYTE_STRING_HELLO: &str = {
+        match str::from_utf8(b"Hello") {
+            Ok(s) => s,
+            Err(_) => unreachable!(),
+        }
+    };
+}
+
+/// These tests don't actually test `ndd`, but they test the behavior **without** `ndd`.
+#[cfg(test)]
+mod tests_behavior_without_ndd {
+    use crate::tests_shared::{STR_CONST_FROM_BYTE_ARRAY_HI, STR_CONST_FROM_BYTE_STRING_HELLO};
     use core::ptr;
-
-    const fn expect_sync_ref<T: Sync>() {}
-    const _: () = expect_sync_ref::<NonDeDuplicated<u8>>();
-
-    #[test]
-    #[cfg(any(debug_assertions, miri))]
-    #[should_panic(
-        expected = "Do not use for local variables, const, or on heap. Use for static variables only."
-    )]
-    fn drop_panics_in_debug_and_miri() {
-        let _: NonDeDuplicated<()> = NonDeDuplicated::new(());
-    }
-
-    #[cfg(not(any(debug_assertions, miri)))]
-    #[test]
-    fn drop_silent_in_release() {
-        let _: NonDeDuplicated<()> = NonDeDuplicated::new(());
-    }
 
     const U8_CONST: u8 = b'A';
     static U8_STATIC_1: u8 = b'A';
@@ -262,22 +262,6 @@ mod tests {
         assert!(!ptr::eq(&U8_STATIC_1, &U8_CONST));
     }
 
-    static U8_NDD: NonDeDuplicated<u8> = NonDeDuplicated::new(U8_CONST);
-    static U8_NDD_REF: &u8 = U8_NDD.get();
-    #[test]
-    fn u8_global_const_and_ndd() {
-        assert!(!ptr::eq(U8_NDD_REF, &U8_CONST));
-        assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_1));
-        assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_2));
-    }
-
-    const STR_CONST_FROM_BYTE_ARRAY_HI: &str = {
-        match str::from_utf8(&[b'H', b'i']) {
-            Ok(s) => s,
-            Err(_) => unreachable!(),
-        }
-    };
-
     #[cfg(not(miri))]
     #[test]
     #[should_panic(expected = "assertion failed: !ptr::eq(STR_CONST_FROM_BYTE_ARRAY_HI, \"Hi\")")]
@@ -290,25 +274,10 @@ mod tests {
         assert!(!ptr::eq(STR_CONST_FROM_BYTE_ARRAY_HI, "Hi"));
     }
 
-    const STR_CONST_FROM_BYTE_STRING_HELLO: &str = {
-        match str::from_utf8(b"Hello") {
-            Ok(s) => s,
-            Err(_) => unreachable!(),
-        }
-    };
-
     /// This is the same for all three: release, debug AND miri!
     #[test]
     fn str_global_byte_by_byte_const_and_local_static() {
         assert!(ptr::eq(STR_CONST_FROM_BYTE_STRING_HELLO, "Hello"));
-    }
-
-    static STR_NDD_HI: NonDeDuplicatedStr<5> = NonDeDuplicatedStr::new("Hello");
-    #[test]
-    fn str_ndd_hi() {
-        assert!(!ptr::eq(STR_NDD_HI.get(), "Hi"));
-        assert!(!ptr::eq(STR_NDD_HI.get(), STR_CONST_FROM_BYTE_ARRAY_HI));
-        assert!(!ptr::eq(STR_NDD_HI.get(), STR_CONST_FROM_BYTE_STRING_HELLO));
     }
 
     static STR_STATIC: &str = "Ciao";
@@ -328,14 +297,6 @@ mod tests {
         const LOCAL_CONST_ARR: [u8; 4] = [b'C', b'i', b'a', b'o'];
         let local_const_based_slice: &str = str::from_utf8(&LOCAL_CONST_ARR).unwrap();
         assert!(!ptr::eq(local_const_based_slice, STR_STATIC));
-    }
-
-    static STR_NDD_CIAO: NonDeDuplicatedStr<4> = NonDeDuplicatedStr::new("Ciao");
-    #[test]
-    fn str_local_const_based_and_str_ndd() {
-        const LOCAL_CONST_ARR: [u8; 4] = [b'C', b'i', b'a', b'o'];
-        let local_const_based_slice: &str = str::from_utf8(&LOCAL_CONST_ARR).unwrap();
-        assert!(!ptr::eq(local_const_based_slice, STR_NDD_CIAO.get()));
     }
 
     mod cross_module_static {
@@ -364,5 +325,59 @@ mod tests {
                 &super::cross_module_static::STATIC_OPT_U8_A
             ));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests_behavior_with_ndd {
+    use super::*;
+    use crate::tests_shared::{STR_CONST_FROM_BYTE_ARRAY_HI, STR_CONST_FROM_BYTE_STRING_HELLO};
+    use core::ptr;
+
+    const U8_CONST: u8 = b'A';
+    static U8_STATIC_1: u8 = b'A';
+    static U8_STATIC_2: u8 = b'A';
+
+    const fn expect_sync_ref<T: Sync>() {}
+    const _: () = expect_sync_ref::<NonDeDuplicated<u8>>();
+
+    static U8_NDD: NonDeDuplicated<u8> = NonDeDuplicated::new(U8_CONST);
+    static U8_NDD_REF: &u8 = U8_NDD.get();
+    #[test]
+    fn u8_global_const_and_ndd() {
+        assert!(!ptr::eq(U8_NDD_REF, &U8_CONST));
+        assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_1));
+        assert!(!ptr::eq(U8_NDD_REF, &U8_STATIC_2));
+    }
+
+    static STR_NDD_HI: NonDeDuplicatedStr<5> = NonDeDuplicatedStr::new("Hello");
+    #[test]
+    fn str_ndd_hi() {
+        assert!(!ptr::eq(STR_NDD_HI.get(), "Hi"));
+        assert!(!ptr::eq(STR_NDD_HI.get(), STR_CONST_FROM_BYTE_ARRAY_HI));
+        assert!(!ptr::eq(STR_NDD_HI.get(), STR_CONST_FROM_BYTE_STRING_HELLO));
+    }
+
+    static STR_NDD_CIAO: NonDeDuplicatedStr<4> = NonDeDuplicatedStr::new("Ciao");
+    #[test]
+    fn str_local_const_based_and_str_ndd() {
+        const LOCAL_CONST_ARR: [u8; 4] = [b'C', b'i', b'a', b'o'];
+        let local_const_based_slice: &str = str::from_utf8(&LOCAL_CONST_ARR).unwrap();
+        assert!(!ptr::eq(local_const_based_slice, STR_NDD_CIAO.get()));
+    }
+
+    #[test]
+    #[cfg(any(debug_assertions, miri))]
+    #[should_panic(
+        expected = "Do not use for local variables, const, or on heap. Use for static variables only."
+    )]
+    fn drop_panics_in_debug_and_miri() {
+        let _: NonDeDuplicated<()> = NonDeDuplicated::new(());
+    }
+
+    #[cfg(not(any(debug_assertions, miri)))]
+    #[test]
+    fn drop_silent_in_release() {
+        let _: NonDeDuplicated<()> = NonDeDuplicated::new(());
     }
 }
