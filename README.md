@@ -37,10 +37,8 @@ However, there is a problem (caused by de-duplication in `release`, and for some
 or `miri). It affects ("ordinary") `const` values/expressions that equal in value to any `static`
 (whether it's a `static` variable, or a static literal), which may be your designated `static`.
 Rust/LLVM re-uses address of one such matching `static` for references to any equal value(s) defined
-as `const`. See a test [`src/lib.rs` ->
-`addresses_not_unique_between_const_and_static()`](https://github.com/peter-lyons-kehl/ndd/blob/26d743d9b7bbaf41155e00174f8827efca5d5f32/src/lib.rs#L95).
-Such `const`, `static` or literal could be in 3rd party code, even private. (See
-[`cross_crate_demo_bug/`](https://github.com/peter-lyons-kehl/ndd/tree/main/cross_crate_demo_bug))!
+as `const`. See [`src/lib.rs` -> `u8_global_const_and_global_static_release()`]. Such `const`,
+`static` or literal could be in 3rd party code, even private. (See [`cross_crate_demo_bug/`].)
 
 Things get worse: `dev` builds don't have this consistent:
 
@@ -71,29 +69,30 @@ opt-level = 2
 
 ## Solution
 
-`ndd:NonDeDuplicated` uses
-[`core::cell::Cell`](https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html) to hold the data
-passed in by the user. There is no mutation and no mutation access. The only access it gives to the
-inner data is through shared references.
+[`ndd::NonDeDuplicated`] uses [`core::cell::Cell`] to hold the data passed in by the user. There is no
+mutation and no mutation access. The only access it gives to the inner data is through shared
+references.
 
-Unlike `Cell` (and friends), `NonDeDuplicated` **does** implement
-[`core::marker::Sync`](https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html) (if the inner
-data's type implements `Send` and  `Sync`). It can safely do so, because it never provides mutable
-access, and it never mutates the inner data. That is similar to how
-[`std::sync::Mutex`](https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html#impl-Sync-for-Mutex%3CT%3E)
+Unlike `Cell` (and friends), `NonDeDuplicated` **does** implement [`core::marker::Sync`] (if the
+inner data's type implements `Send` and  `Sync`). It can safely do so, because it never provides
+mutable access, and it never mutates the inner data. That is similar to how [`std::sync::Mutex`]
 implements `Sync`, too.
 
-See [`src/lib.rs` ->
-`tests_behavior_with_ndd`](https://github.com/search?q=repo%3Apeter-lyons-kehl%2Fndd+tests_behavior_with_ndd+path%3Asrc%2Flib.rs&type=code).
+See [`src/lib.rs` -> `tests_behavior_with_ndd`].
 
 ## Use
 
-Use `ndd::NonDeDuplicated` to wrap your static data. Use it for (immutable) `static` variables only.
-Do **not** use it for locals or on heap. That is validated by implementation of
-[core::ops::Drop](https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html), which `panic`-s in
-`dev` builds.
+Use [`ndd::NonDeDuplicated`] to wrap your static data (other than string literals or C string
+literals). Use it for (immutable) `static` variables only. Do **not** use it for locals or on heap.
+That is validated by implementation of [`core::ops::Drop`], which `panic`s in `dev` builds.
 
-See unit tests in [src/lib.rs](src/lib.rs).
+Use [`ndd::NonDeDuplicatedStr`] and [`ndd::NonDeDuplicatedCStr`] to wrap static string slices
+(`&str`) and C strings (owned bytes that defer to `&CStr`). These two types need a `const` generic
+parameter, which is the length (in bytes). There is no way around this (in stable Rust). On
+`nightly` Rust you can use `ndd::infer:NonDeDuplicatedStr` and `ndd::infer:NonDeDuplicatedCStr` from
+**odd-numbered** (`-nightly`) version of `ndd` instead.
+
+See unit tests in [`src/lib.rs`], and [`cross_crate_demo_fix/callee/src/lib.rs`].
 
 ## Compatibility
 
@@ -103,7 +102,7 @@ See unit tests in [src/lib.rs](src/lib.rs).
 
 ### Stable is always forward compatible
 
-`ndd` is planned to be always below version `1.0`. (If a need arises for big incompatible
+`ndd` is planned to be always below version `1.0`. (If a need ever arises for big incompatible
 functionality, that can go in a new crate.)
 
 That allows you to specify `ndd` as a dependency with version `0.*`, which will match ANY **major**
@@ -154,7 +153,7 @@ versions `1.0` or higher.
   trick](https://github.com/dtolnay/semver-trick). See also [The Cargo Book > Dependency
   Resolution](https://rustwiki.org/en/cargo/reference/resolver.html#version-incompatibility-hazards).
   
-  However, the only type exported from `ndd` is `ndd::NonDeDuplicated`. It is a zero-cost wrapper
+  However, the only type exported from `ndd` is [`ndd::NonDeDuplicated`]. It is a zero-cost wrapper
   suitable for immutable `static` variables. It is normally not being passed around as a
   parameter/return type or a composite type. And its functions can get inlined/optimized away. So,
   there shouldn't be any big binary size/speed difference, or usability difference, if there happen
@@ -206,29 +205,26 @@ use an asterisk mask for the minor version, like `0.2.*`. But then you lose auto
 
 ### Nightly functionality
 
-Functionality of odd-numbered major (`-nightly`) versions is always subject to change.
+WARNING: Functionality of odd-numbered major (`-nightly`) versions is always subject to change!
 
-The following extra functionality is available on `0.3.1-nightly`. You need `nightly` Rust toolchain
-(of course).
+The following extra functionality is available on `0.3.5-nightly`. Of course, you need `nightly`
+Rust toolchain.
 
 #### as_array_of_cells
 
-`ndd::NonDeDuplicated` has function `as_array_of_cells`, similar to Rust's
-[`core::cell::Cell::as_array_of_cells`](https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.as_array_of_cells)
-(which will, hopefully, become stable in 1.91).
+[`ndd::NonDeDuplicated`] has function `as_array_of_cells`, similar to Rust's
+[`core::cell::Cell::as_array_of_cells`] (which will, hopefully, become stable in Rust 1.91).
 
 #### as_slice_of_cells
 
-Similar to `as_array_of_cells`, `ndd::NonDeDuplicated` has function `as_slice_of_cells`. That
+Similar to `as_array_of_cells`, [`ndd::NonDeDuplicated`] has function `as_slice_of_cells`. That
 **can** be stable with with Rust `1.88`+. However, to simplify versioning, it's bundled in
 `-nightly` together with `as_array_of_cells`. If you need it earlier, get in touch.
 
 #### const Deref and From
 
-[core::ops::Deref](https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html) and
-[core::convert::From](https://doc.rust-lang.org/nightly/core/convert/trait.From.html) are
-implemented as `const`. As of mid 2025, `const` traits are having high traction in Rust. Hopefully
-this will be stable not in years, but sooner.
+[`core::ops::Deref`] and [`core::convert::From`] are implemented as `const`. As of mid 2025, `const`
+traits are having high traction in Rust. Hopefully this will be stable not in years, but sooner.
 
 These traits are **not** implemented in stable versions at all. Why? Because `ndd` types are
 intended for `static` variables, so non-`const` functions don't help us.
@@ -287,7 +283,7 @@ Used by
 ## Updates
 
 Please subscribe for low frequency updates at
-[#2](https://github.com/peter-lyons-kehl/ndd/issues/2).
+[peter-lyons-kehl/ndd/issues#2](https://github.com/peter-lyons-kehl/ndd/issues/2).
 
 ## Side fruit
 
@@ -295,6 +291,24 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
 `const` function: pull request
 [rust-lang/rust#146904](https://github.com/rust-lang/rust/pull/146904).
 
+<!-- Link URLs -->
 [`core::ptr::eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.eq.html
 [`core::ptr::addr_eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.addr_eq.html
+<!-- The following works also on https://crates.io/crates/ndd auto-magically: -->
 [`src/lib.rs` -> `addresses_unique_between_statics()`]: src/lib.rs#L246
+[`src/lib.rs` -> `u8_global_const_and_global_static_release()`]: src/lib.rs#L258
+[`cross_crate_demo_bug/`]: cross_crate_demo_bug/
+[`core::cell::Cell`]: https://doc.rust-lang.org/1.86.0/core/cell/struct.Cell.html
+[`core::marker::Sync`]: https://doc.rust-lang.org/1.86.0/core/marker/trait.Sync.html
+[`std::sync::Mutex`]: https://doc.rust-lang.org/1.86.0/std/sync/struct.Mutex.html#impl-Sync-for-Mutex<T>
+[`src/lib.rs` -> `tests_behavior_with_ndd`]: src/lib.rs#L339
+[`core::ops::Drop`]: https://doc.rust-lang.org/1.86.0/core/ops/trait.Drop.html
+[`src/lib.rs`]: src/lib.rs
+[`ndd::NonDeDuplicated`]: https://docs.rs/ndd/latest/ndd/type.NonDeDuplicated.html
+[`ndd::NonDeDuplicatedStr`]: https://docs.rs/ndd/latest/ndd/type.NonDeDuplicatedStr.html
+[`ndd::NonDeDuplicatedCStr`]: https://docs.rs/ndd/latest/ndd/type.NonDeDuplicatedCStr.html
+[`cross_crate_demo_fix/callee/src/lib.rs`]: cross_crate_demo_fix/callee/src/lib.rs
+<!-- nightly-only: -->
+[`core::cell::Cell::as_array_of_cells`]: https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.as_array_of_cells
+[`core::ops::Deref`]: https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html
+[`core::convert::From`]: https://doc.rust-lang.org/nightly/core/convert/trait.From.html

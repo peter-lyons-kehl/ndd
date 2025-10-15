@@ -1,6 +1,21 @@
 // OVerride links, so that rustdoc can point them locally (or to docs.io, if run on docs.io).
-//! [`src/lib.rs` -> `addresses_unique_between_statics()`]:
-//!     https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L246
+//! [`src/lib.rs` -> `addresses_unique_between_statics()`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L246
+//! [`src/lib.rs` -> `u8_global_const_and_global_static_release()`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L258
+//! [`cross_crate_demo_bug/`]: https://github.com/peter-lyons-kehl/ndd/tree/main/cross_crate_demo_bug
+//! [`core::cell::Cell`]: core::cell::Cell
+//! [`core::marker::Sync`]: core::marker::Sync
+//! [`std::sync::Mutex`]: std::sync::Mutex#impl-Sync-for-Mutex<T>
+//! [`src/lib.rs` -> `tests_behavior_with_ndd`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L339
+//! [`core::ops::Drop`]: core::ops::Drop
+//! [`src/lib.rs`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs
+//! [`ndd::NonDeDuplicated`]: crate::NonDeDuplicated
+//! [`ndd::NonDeDuplicatedStr`]: crate::NonDeDuplicatedStr
+//! [`ndd::NonDeDuplicatedCStr`]: crate::NonDeDuplicatedCStr
+//! [`cross_crate_demo_fix/callee/src/lib.rs`]: https://github.com/peter-lyons-kehl/ndd/blob/main/cross_crate_demo_fix/callee/src/lib.rs
+//! <!-- as_array_of_cells is on nightly toolchain only -->
+//! [`core::cell::Cell::as_array_of_cells`]: core::cell::Cell::as_array_of_cells
+//! [`core::ops::Deref`]: core::ops::Deref
+//! [`core::convert::From`]: core::convert::From
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(any(doc, test)), no_std)]
 #![allow(incomplete_features)]
