@@ -1,27 +1,28 @@
-![GitHub Actions
-results](https://github.com/peter-lyons-kehl/ndd/actions/workflows/main.yml/badge.svg)
+[![GitHub Actions
+results](https://github.com/peter-lyons-kehl/ndd/actions/workflows/main.yml/badge.svg)](https://github.com/peter-lyons-kehl/ndd/actions)
 
 # Summary
+## Purpose
 
-`ndd` (Non-De-Duplicated) is a zero-cost transparent wrapper. For `static` variables that do **not**
+`ndd` (Non-De-Duplicated) is a zero-cost transparent wrapper for `static` variables that do **not**
 share memory with any other `static` or `const` (or local) variables (or literals). Use for `static`
 data (single variables/arrays/slices) referenced with references/slices/pointers that are **compared
 by address**.
 
-# Use
+## Use
 
 Use [`ndd::NonDeDuplicated`] to wrap your static data (other than string literals (`&str`) or C
 string literal bytes). Use it for (immutable) `static` variables only.
 
 Use [`ndd::NonDeDuplicatedStr`] and [`ndd::NonDeDuplicatedCStr`] to wrap static string slices
 (`&str`) and C strings (owned bytes that defer to `&CStr`). These two types need a `const` generic
-parameter `N`, which is the length (in bytes). There is no way around this (in stable Rust). On
+parameter `N`, which is the length (in bytes). There is no way around this (on stable Rust). On
 `nightly` Rust you can use `ndd::infer:NonDeDuplicatedStr` and `ndd::infer:NonDeDuplicatedCStr` from
 **odd-numbered** (`-nightly`) version of `ndd` instead.
 
 See unit tests in [`src/lib.rs`], and [`cross_crate_demo_fix/callee/src/lib.rs`].
 
-# Problem
+## Problem
 
 Rust (or, rather, LLVM) by default de-duplicates or reuses **addresses** of `static` variables in
 `release` builds. And somewhat in `dev` (debug) builds, too. For most purposes that is good: The
@@ -44,14 +45,13 @@ That does work out of the box when the client passes a reference/slice defined a
 `static` gets its own memory space (even with the default `release` optimizations). See a test
 [`src/lib.rs` -> `tests_without_ndd` -> `addresses_unique_between_statics()`].
 
-However, there is a problem (caused by de-duplication in `release`, and for some types even in `dev
-or `miri). It affects ("ordinary") `const` values/expressions that equal in value to any `static`
-(whether it's a `static` variable, or a static literal), which may be your designated `static`.
-Rust/LLVM re-uses address of one such matching `static` for references to any equal value(s) defined
-as `const`. See <!-- padding for re-wrap                                                        -->
-[`src/lib.rs` -> `tests_without_ndd` -> `u8_global_const_and_global_static_release()`]. Such
-`const`, `static` or literal could be in 3rd party code, even private. (See
-[`cross_crate_demo_bug/`].)
+However, there is a problem (caused by de-duplication in `release` builds, and for some types even
+in `dev` or [`MIRI`]). It affects ("ordinary") `const` values/expressions that equal in value to any
+`static` (whether it's a `static` variable, or a static literal), which may be your designated
+`static`. Rust/LLVM re-uses address of one such matching `static` for references to any equal
+value(s) defined as `const`. See <!-- padding for re-wrap --> [`src/lib.rs` -> `tests_without_ndd`
+-> `u8_global_const_and_global_static_release()`]. Such `const`, `static` or literal could be in 3rd
+party code, even private. (See [`cross_crate_demo_bug/`].)
 
 Things get worse: `dev` builds don't have this consistent:
 
@@ -59,7 +59,8 @@ Things get worse: `dev` builds don't have this consistent:
   for references/slices to `const` values. But
 - For other types (`str`), `dev` builds do reuse them...
 
-`MIRI` reuses `static` addresses even less (than `dev` does), but it still does reuse them sometimes
+[`MIRI`] reuses `static` addresses even less (than `dev` does), but it still does reuse them
+sometimes
 - for example, between byte (`&CStr`) literals (`b"Hello"`) and equal string (`&str`) literals
   (technically, subslices: `"Hello"`).
 
@@ -80,7 +81,7 @@ lto = "fat"
 opt-level = 2
 ```
 
-# Solution
+## Solution
 
 [`ndd::NonDeDuplicated`] uses [`core::cell::Cell`] to hold the data passed in by the user. There is
 no mutation and no mutation access. The only access it gives to the inner data is through shared
@@ -246,7 +247,7 @@ run on Alpine Linux (without `libc`) and are POSIX-compliant:
 - `cargo doc --no-deps --quiet`
 - `cargo test`
 - `cargo test --release`
-- with [MIRI](https://github.com/rust-lang/miri):
+- with [`MIRI`]
   - `rustup install nightly --profile minimal`
   - `rustup +nightly component add miri`
   - `cargo +nightly miri test`
@@ -310,6 +311,7 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
 [`core::ptr::eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.eq.html
 [`core::ptr::addr_eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.addr_eq.html
 [`src/lib.rs` -> `tests_without_ndd` -> `addresses_unique_between_statics()`]: src/lib.rs#L269
+[`MIRI`]: https://github.com/rust-lang/miri
 [`src/lib.rs` -> `tests_without_ndd` -> `u8_global_const_and_global_static_release()`]:
     src/lib.rs#L278
 [`cross_crate_demo_bug/`]: cross_crate_demo_bug/
