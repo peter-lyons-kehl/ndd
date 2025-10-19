@@ -255,33 +255,33 @@ Checks and tests are run by [GitHub Actions]. See
   - `cargo +nightly miri test`
 - demonstration of the problem and the fix:
   - standard optimization for `dev` and `release` builds: most do not get de-duplicated:
-    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     literal_str`
-    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release literal_str`
-    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_str`
-    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_str`
-    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_option_u8`
-    - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_option_u8`
+    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `dev    ` [`literal_str`]
+    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `release` [`literal_str`]
+    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `dev    ` [`const_str`]
+    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `release` [`const_str`]
+    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `dev`     [`const_option_u8`]
+    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `release` [`const_option_u8`]
   - but, some types do get de-duplicated even in standard `dev` and `release`:
-    - `cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh dev     const_bytes`
-    - `cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh release const_bytes`
+    - [`cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh`] `dev`     [`const_bytes`]
+    - [`cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh`] `release` [`const_bytes`]
   - `release` with Fat LTO (and `dev` with Fat LTO and `opt-level` set to `2`): deduplicated:
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     literal_str`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release literal_str`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_str`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_str`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_option_u8`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_option_u8`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_bytes`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_bytes`
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`literal_str`]
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`literal_str`]
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`const_str`]
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`const_str`]
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`const_option_u8`]
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`const_option_u8`]
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`const_bytes`]
+    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`const_bytes`]
   - fix:
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     literal_str`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release literal_str`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_str`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_str`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_option_u8`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_option_u8`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_bytes`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_bytes`
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`literal_str`]
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`literal_str`]
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`const_str`]
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`const_str`]
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`const_option_u8`]
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`const_option_u8`]
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`const_bytes`]
+    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`const_bytes`]
 - validate the versioning schema:
   - [`pre-commit`]
 
@@ -332,3 +332,11 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
     https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.as_array_of_cells
 [`core::ops::Deref`]: https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html
 [`core::convert::From`]: https://doc.rust-lang.org/nightly/core/convert/trait.From.html
+[`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`]: cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh
+[`cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh`]: cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh
+[`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`]: cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh
+[`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`]: cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh
+[`literal_str`]: cross_crate_shared_src/literal_str.rs
+[`const_str`]: cross_crate_shared_src/const_str.rs
+[`const_option_u8`]: cross_crate_shared_src/const_option_u8.rs
+[`const_bytes`]: cross_crate_shared_src/const_bytes.rs
