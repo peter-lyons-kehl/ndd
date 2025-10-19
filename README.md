@@ -239,9 +239,11 @@ intended for `static` variables, so non-`const` functions don't help us.
 
 # Quality assurance
 
-Checks and tests are run by [GitHub Actions], which uses `rust:1.87-alpine` container. All scripts
-run on Alpine Linux (without `libc`) and are POSIX-compliant:
+Checks and tests are run by [GitHub Actions]. See
+[results](https://github.com/peter-lyons-kehl/ndd/actions). All scripts run on Alpine Linux (without
+`libc`, in a `rust:1.87-alpine` container) and are POSIX-compliant:
 
+- `rustup component add clippy rustfmt`
 - `cargo clippy`
 - `cargo fmt --check`
 - `cargo doc --no-deps --quiet`
@@ -251,7 +253,7 @@ run on Alpine Linux (without `libc`) and are POSIX-compliant:
   - `rustup install nightly --profile minimal`
   - `rustup +nightly component add miri`
   - `cargo +nightly miri test`
-- demonstration of the problem and fix:
+- demonstration of the problem and the fix:
   - standard optimization for `dev` and `release` builds: most do not get de-duplicated:
     - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     literal_str`
     - `cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release literal_str`
@@ -264,8 +266,8 @@ run on Alpine Linux (without `libc`) and are POSIX-compliant:
     - `cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh release const_bytes`
   - `release` with Fat LTO (and `dev` with Fat LTO and `opt-level` set to `2`): deduplicated:
     - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     literal_str`
+    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release literal_str`
     - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_str`
-    - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release literal_st`r
     - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_str`
     - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_option_u8`
     - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_option_u8`
@@ -273,8 +275,8 @@ run on Alpine Linux (without `libc`) and are POSIX-compliant:
     - `cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_bytes`
   - fix:
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     literal_str`
-    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_str`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release literal_str`
+    - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_str`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_str`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_option_u8`
     - `cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_option_u8`
