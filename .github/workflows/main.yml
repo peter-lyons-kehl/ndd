@@ -29,29 +29,29 @@ jobs:
           rustup install nightly --profile minimal
           rustup +nightly component add miri
           cargo +nightly miri test
-          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     literal_str
-          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release literal_str
-          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_str
-          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_str
-          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh dev     const_option_u8
-          cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh release const_option_u8
-          cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh dev     const_bytes
-          cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh release const_bytes
+          demo_bug/non_lto/non_dedup.sh liter_str dev
+          demo_bug/non_lto/non_dedup.sh liter_str release
+          demo_bug/non_lto/non_dedup.sh const_str dev
+          demo_bug/non_lto/non_dedup.sh const_str release
+          demo_bug/non_lto/non_dedup.sh const_opt dev
+          demo_bug/non_lto/non_dedup.sh const_opt release
+          demo_bug/non_lto/dedup_out.sh const_u8s dev
+          demo_bug/non_lto/dedup_out.sh const_u8s release
 
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     literal_str
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release literal_str
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_str
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_str
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_option_u8
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_option_u8
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh dev     const_bytes
-          cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh release const_bytes
+          demo_bug/fat_lto/dedup_out.sh liter_str dev
+          demo_bug/fat_lto/dedup_out.sh liter_str release
+          demo_bug/fat_lto/dedup_out.sh const_str dev
+          demo_bug/fat_lto/dedup_out.sh const_str release
+          demo_bug/fat_lto/dedup_out.sh const_opt dev
+          demo_bug/fat_lto/dedup_out.sh const_opt release
+          demo_bug/fat_lto/dedup_out.sh const_u8s dev
+          demo_bug/fat_lto/dedup_out.sh const_u8s release
 
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     literal_str
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release literal_str
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_str
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_str
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_option_u8
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_option_u8
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh dev     const_bytes
-          cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh release const_bytes
+          demo_fix/fat_lto/non_dedup.sh liter_str dev
+          demo_fix/fat_lto/non_dedup.sh liter_str release
+          demo_fix/fat_lto/non_dedup.sh const_str dev
+          demo_fix/fat_lto/non_dedup.sh const_str release
+          demo_fix/fat_lto/non_dedup.sh const_opt dev
+          demo_fix/fat_lto/non_dedup.sh const_opt release
+          demo_fix/fat_lto/non_dedup.sh const_u8s dev
+          demo_fix/fat_lto/non_dedup.sh const_u8s release

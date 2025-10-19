@@ -13,6 +13,10 @@ behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 `ndd::infer::NonDeDuplicatedStr` and `ndd::infer::NonDeDuplicatedCStr`
 -->
 
+## 0.2.10 (stable)
+
+Renamed test files. More links in documentation.
+
 ## 0.2.9 (stable)
 
 `README.md` links to work on both GitHub and `rustdoc` or `crates.io` (more).
@@ -25,15 +29,16 @@ behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - `NonDeDuplicatedCStr` for FFI
   [`core::ffi::CStr`](https://doc.rust-lang.org/nightly/core/ffi/struct.CStr.html)
-- Renamed `cross-crate-demo-problem/` to `cross_crate_demo_bug/`.
-- [`cross_crate_shared_scripts/`](cross_crate_shared_scripts/)
-- Created `cross_crate_demo_fix/`, added to `README.md` and GitHub actions.
+- Renamed `cross-crate-demo-problem/` to `cross_crate_demo_bug/` (later renamed to `demo_bug/`).
+- `cross_crate_shared_scripts/` (later renamed to `demo_shared_scripts/`)
+- Created `cross_crate_demo_fix/` (later renamed to `demo_fix/`), added to `README.md` and GitHub
+  actions.
 
 ## 0.2.6 (stable)
 
 - Renamed `cross-crate-demo` -> `cross-crate-demo-problem`.
 - Moved `cross-crate-demo/bin*/*.sh` scripts one level deeper to `invocation_scripts` (later moved
-  to `cross_crate_shared_scripts/`).
+  to `demo_shared_scripts/`).
 - API
 - `NonDeDuplicatedStr`
 
@@ -42,7 +47,7 @@ behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 - `NonDeDuplicated`'s generic parameter `T` must now implement
   [`core::any::Any`](https://doc.rust-lang.org/nightly/core/any/trait.Any.html).
 - Tests with [MIRI](https://github.com/rust-lang/miri).
-- `cross-crate-demo/` (later renamed to `cross_crate_demo_bug/`) demonstrates effect of Fat LTO
+- `cross-crate-demo/` (later renamed to `demo_bug/`) demonstrates effect of Fat LTO
   (Link Time Optimization) across crates. Also invoked from GitHub Actions.
 - Docs.
 

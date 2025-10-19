@@ -183,7 +183,7 @@ impl<const N: usize> NonDeDuplicatedCStr<N> {
     ///  **not** include the trailing NUL byte - that is added automatically.
     pub const fn new_from_str(s: &str) -> Self {
         let mut arr = [0u8; N];
-        if let Some((_, sub_slice)) = (&mut arr).split_last_mut() {
+        if let Some((_, sub_slice)) = arr.split_last_mut() {
             crate::copy_bytes_to_array(sub_slice, s.as_bytes(), s.len());
         } else {
             unreachable!()
@@ -358,7 +358,9 @@ mod tests_with_ndd {
     static U8_STATIC_1: u8 = b'A';
     static U8_STATIC_2: u8 = b'A';
 
+    #[allow(dead_code)]
     const fn expect_sync_ref<T: Sync>() {}
+    #[allow(dead_code)]
     const _: () = expect_sync_ref::<NonDeDuplicated<u8>>();
 
     static U8_NDD: NonDeDuplicated<u8> = NonDeDuplicated::new(U8_CONST);

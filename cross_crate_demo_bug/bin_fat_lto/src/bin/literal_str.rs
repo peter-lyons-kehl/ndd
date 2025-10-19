@@ -1,1 +1,0 @@
-../../../../cross_crate_shared_src/literal_str.rs

@@ -1,3 +1,4 @@
 /target
-/cross_crate_demo*/*/target
-/cross_crate_demo*/callee/Cargo.lock
+/demo*/*/target
+/demo*/callee/Cargo.lock
+

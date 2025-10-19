@@ -1,3 +1,5 @@
+<!-- When editing this in VS Code, do NOT apply Rewrap/Rewrap Revived extensions to the whole file.
+-->
 [![GitHub Actions
 results](https://github.com/peter-lyons-kehl/ndd/actions/workflows/main.yml/badge.svg)](https://github.com/peter-lyons-kehl/ndd/actions)
 
@@ -20,7 +22,7 @@ parameter `N`, which is the length (in bytes). There is no way around this (on s
 `nightly` Rust you can use `ndd::infer:NonDeDuplicatedStr` and `ndd::infer:NonDeDuplicatedCStr` from
 **odd-numbered** (`-nightly`) version of `ndd` instead.
 
-See unit tests in [`src/lib.rs`], and [`cross_crate_demo_fix/callee/src/lib.rs`].
+See unit tests in [`src/lib.rs`], and [`demo_fix/callee/src/lib.rs`].
 
 ## Problem
 
@@ -51,7 +53,7 @@ in `dev` or [`MIRI`]). It affects ("ordinary") `const` values/expressions that e
 `static`. Rust/LLVM re-uses address of one such matching `static` for references to any equal
 value(s) defined as `const`. See <!-- padding for re-wrap --> [`src/lib.rs` -> `tests_without_ndd`
 -> `u8_global_const_and_global_static_release()`]. Such `const`, `static` or literal could be in 3rd
-party code, even private. (See [`cross_crate_demo_bug/`].)
+party code, even private. (See [`demo_bug/`].)
 
 Things get worse: `dev` builds don't have this consistent:
 
@@ -255,33 +257,33 @@ Checks and tests are run by [GitHub Actions]. See
   - `cargo +nightly miri test`
 - demonstration of the problem and the fix:
   - standard optimization for `dev` and `release` builds: most do not get de-duplicated:
-    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `dev    ` [`literal_str`]
-    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `release` [`literal_str`]
-    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `dev    ` [`const_str`]
-    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `release` [`const_str`]
-    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `dev`     [`const_option_u8`]
-    - [`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`] `release` [`const_option_u8`]
+    - [`demo_bug/non_lto/non_dedup.sh`] [`liter_str`] `dev`
+    - [`demo_bug/non_lto/non_dedup.sh`] [`liter_str`] `release`
+    - [`demo_bug/non_lto/non_dedup.sh`] [`const_str`] `dev`
+    - [`demo_bug/non_lto/non_dedup.sh`] [`const_str`] `release`
+    - [`demo_bug/non_lto/non_dedup.sh`] [`const_opt`] `dev`
+    - [`demo_bug/non_lto/non_dedup.sh`] [`const_opt`] `release`
   - but, some types do get de-duplicated even in standard `dev` and `release`:
-    - [`cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh`] `dev`     [`const_bytes`]
-    - [`cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh`] `release` [`const_bytes`]
+    - [`demo_bug/non_lto/dedup_out.sh`] [`const_u8s`] `dev`
+    - [`demo_bug/non_lto/dedup_out.sh`] [`const_u8s`] `release`
   - `release` with Fat LTO (and `dev` with Fat LTO and `opt-level` set to `2`): deduplicated:
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`literal_str`]
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`literal_str`]
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`const_str`]
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`const_str`]
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`const_option_u8`]
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`const_option_u8`]
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `dev`     [`const_bytes`]
-    - [`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`] `release` [`const_bytes`]
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`liter_str`] `dev`
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`liter_str`] `release`
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_str`] `dev`
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_str`] `release`
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_opt`] `dev`
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_opt`] `release`
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_u8s`] `dev`
+    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_u8s`] `release`
   - fix:
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`literal_str`]
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`literal_str`]
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`const_str`]
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`const_str`]
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`const_option_u8`]
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`const_option_u8`]
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `dev`     [`const_bytes`]
-    - [`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`] `release` [`const_bytes`]
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`liter_str`] `dev`
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`liter_str`] `release`
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_str`] `dev`
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_str`] `release`
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_opt`] `dev`
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_opt`] `release`
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_u8s`] `dev`
+    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_u8s`] `release`
 - validate the versioning schema:
   - [`pre-commit`]
 
@@ -309,14 +311,14 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
 [`ndd::NonDeDuplicatedStr`]: https://docs.rs/ndd/latest/ndd/type.NonDeDuplicatedStr.html
 [`ndd::NonDeDuplicatedCStr`]: https://docs.rs/ndd/latest/ndd/type.NonDeDuplicatedCStr.html
 [`src/lib.rs`]: src/lib.rs
-[`cross_crate_demo_fix/callee/src/lib.rs`]: cross_crate_demo_fix/callee/src/lib.rs
+[`demo_fix/callee/src/lib.rs`]: demo_fix/callee/src/lib.rs
 [`core::ptr::eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.eq.html
 [`core::ptr::addr_eq`]: https://doc.rust-lang.org/1.86.0/core/ptr/fn.addr_eq.html
 [`src/lib.rs` -> `tests_without_ndd` -> `addresses_unique_between_statics()`]: src/lib.rs#L269
 [`MIRI`]: https://github.com/rust-lang/miri
 [`src/lib.rs` -> `tests_without_ndd` -> `u8_global_const_and_global_static_release()`]:
     src/lib.rs#L278
-[`cross_crate_demo_bug/`]: cross_crate_demo_bug/
+[`demo_bug/`]: demo_bug/
 [`core::cell::Cell`]: https://doc.rust-lang.org/1.86.0/core/cell/struct.Cell.html
 [`core::marker::Sync`]: https://doc.rust-lang.org/1.86.0/core/marker/trait.Sync.html
 [`core::marker::Send`]: https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html
@@ -332,11 +334,11 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
     https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.as_array_of_cells
 [`core::ops::Deref`]: https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html
 [`core::convert::From`]: https://doc.rust-lang.org/nightly/core/convert/trait.From.html
-[`cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh`]: cross_crate_demo_bug/bin_non_lto/not_deduplicated.sh
-[`cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh`]: cross_crate_demo_bug/bin_non_lto/deduplicated_out.sh
-[`cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh`]: cross_crate_demo_bug/bin_fat_lto/deduplicated_out.sh
-[`cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh`]: cross_crate_demo_fix/bin_fat_lto/not_deduplicated.sh
-[`literal_str`]: cross_crate_shared_src/literal_str.rs
-[`const_str`]: cross_crate_shared_src/const_str.rs
-[`const_option_u8`]: cross_crate_shared_src/const_option_u8.rs
-[`const_bytes`]: cross_crate_shared_src/const_bytes.rs
+[`demo_bug/non_lto/non_dedup.sh`]: demo_bug/non_lto/non_dedup.sh
+[`demo_bug/non_lto/dedup_out.sh`]: demo_bug/non_lto/dedup_out.sh
+[`demo_bug/fat_lto/dedup_out.sh`]: demo_bug/fat_lto/dedup_out.sh
+[`demo_fix/fat_lto/non_dedup.sh`]: demo_fix/fat_lto/non_dedup.sh
+[`liter_str`]: demo_shared_src/liter_str.rs
+[`const_str`]: demo_shared_src/const_str.rs
+[`const_opt`]: demo_shared_src/const_opt.rs
+[`const_u8s`]: demo_shared_src/const_u8s.rs
