@@ -334,6 +334,7 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
     https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.as_array_of_cells
 [`core::ops::Deref`]: https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html
 [`core::convert::From`]: https://doc.rust-lang.org/nightly/core/convert/trait.From.html
+
 [`demo_bug/non_lto`]: demo_bug/non_lto/
 [`demo_bug/fat_lto`]: demo_bug/fat_lto/
 [`demo_fix/fat_lto`]: demo_fix/fat_lto/
