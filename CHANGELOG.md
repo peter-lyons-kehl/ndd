@@ -13,6 +13,10 @@ behind `main`. See also [CONTRIBUTING.md](CONTRIBUTING.md).
 `ndd::infer::NonDeDuplicatedStr` and `ndd::infer::NonDeDuplicatedCStr`
 -->
 
+## 0.2.11 (stable)
+
+Docs.
+
 ## 0.2.10 (stable)
 
 Renamed test files. More links in documentation.

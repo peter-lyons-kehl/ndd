@@ -257,33 +257,33 @@ Checks and tests are run by [GitHub Actions]. See
   - `cargo +nightly miri test`
 - demonstration of the problem and the fix:
   - standard optimization for `dev` and `release` builds: most do not get de-duplicated:
-    - [`demo_bug/non_lto/non_dedup.sh`] [`liter_str`] `dev`
-    - [`demo_bug/non_lto/non_dedup.sh`] [`liter_str`] `release`
-    - [`demo_bug/non_lto/non_dedup.sh`] [`const_str`] `dev`
-    - [`demo_bug/non_lto/non_dedup.sh`] [`const_str`] `release`
-    - [`demo_bug/non_lto/non_dedup.sh`] [`const_opt`] `dev`
-    - [`demo_bug/non_lto/non_dedup.sh`] [`const_opt`] `release`
+    - [`demo_bug/non_lto`]/[`non_dedup.sh`] [`liter_str`] `dev`
+    - [`demo_bug/non_lto`]/[`non_dedup.sh`] [`liter_str`] `release`
+    - [`demo_bug/non_lto`]/[`non_dedup.sh`] [`const_str`] `dev`
+    - [`demo_bug/non_lto`]/[`non_dedup.sh`] [`const_str`] `release`
+    - [`demo_bug/non_lto`]/[`non_dedup.sh`] [`const_opt`] `dev`
+    - [`demo_bug/non_lto`]/[`non_dedup.sh`] [`const_opt`] `release`
   - but, some types do get de-duplicated even in standard `dev` and `release`:
-    - [`demo_bug/non_lto/dedup_out.sh`] [`const_u8s`] `dev`
-    - [`demo_bug/non_lto/dedup_out.sh`] [`const_u8s`] `release`
+    - [`demo_bug/non_lto`]/[`dedup_out.sh`] [`const_u8s`] `dev`
+    - [`demo_bug/non_lto`]/[`dedup_out.sh`] [`const_u8s`] `release`
   - `release` with Fat LTO (and `dev` with Fat LTO and `opt-level` set to `2`): deduplicated:
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`liter_str`] `dev`
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`liter_str`] `release`
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_str`] `dev`
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_str`] `release`
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_opt`] `dev`
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_opt`] `release`
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_u8s`] `dev`
-    - [`demo_bug/fat_lto/dedup_out.sh`] [`const_u8s`] `release`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`liter_str`] `dev`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`liter_str`] `release`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`const_str`] `dev`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`const_str`] `release`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`const_opt`] `dev`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`const_opt`] `release`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`const_u8s`] `dev`
+    - [`demo_bug/fat_lto`]/[`dedup_out.sh`] [`const_u8s`] `release`
   - fix:
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`liter_str`] `dev`
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`liter_str`] `release`
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_str`] `dev`
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_str`] `release`
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_opt`] `dev`
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_opt`] `release`
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_u8s`] `dev`
-    - [`demo_fix/fat_lto/non_dedup.sh`] [`const_u8s`] `release`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`liter_str`] `dev`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`liter_str`] `release`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`const_str`] `dev`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`const_str`] `release`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`const_opt`] `dev`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`const_opt`] `release`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`const_u8s`] `dev`
+    - [`demo_fix/fat_lto`]/[`non_dedup.sh`] [`const_u8s`] `release`
 - validate the versioning schema:
   - [`pre-commit`]
 
@@ -334,10 +334,11 @@ The following side fruit is `std`-only, but related: `std::sync::mutex::data_ptr
     https://doc.rust-lang.org/nightly/core/cell/struct.Cell.html#method.as_array_of_cells
 [`core::ops::Deref`]: https://doc.rust-lang.org/nightly/core/ops/trait.Deref.html
 [`core::convert::From`]: https://doc.rust-lang.org/nightly/core/convert/trait.From.html
-[`demo_bug/non_lto/non_dedup.sh`]: demo_bug/non_lto/non_dedup.sh
-[`demo_bug/non_lto/dedup_out.sh`]: demo_bug/non_lto/dedup_out.sh
-[`demo_bug/fat_lto/dedup_out.sh`]: demo_bug/fat_lto/dedup_out.sh
-[`demo_fix/fat_lto/non_dedup.sh`]: demo_fix/fat_lto/non_dedup.sh
+[`demo_bug/non_lto`]: demo_bug/non_lto/
+[`demo_bug/fat_lto`]: demo_bug/fat_lto/
+[`demo_fix/fat_lto`]: demo_fix/fat_lto/
+[`non_dedup.sh`]: demo_shared_scripts//non_dedup.sh
+[`dedup_out.sh`]: demo_shared_scripts//dedup_out.sh
 [`liter_str`]: demo_shared_src/liter_str.rs
 [`const_str`]: demo_shared_src/const_str.rs
 [`const_opt`]: demo_shared_src/const_opt.rs
