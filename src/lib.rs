@@ -6,16 +6,19 @@
 //! [`ndd::NonDeDuplicatedStr`]: crate::NonDeDuplicatedStr
 //! [`ndd::NonDeDuplicatedCStr`]: crate::NonDeDuplicatedCStr
 //! [`src/lib.rs`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs
-//! [`demo_fix/callee/src/lib.rs`]: https://github.com/peter-lyons-kehl/ndd/blob/main/demo_fix/callee/src/lib.rs
+//! [`demo_fix/callee/src/lib.rs`]:
+//!     https://github.com/peter-lyons-kehl/ndd/blob/main/demo_fix/callee/src/lib.rs
 //! [`core::ptr::eq`]: core::ptr::eq
 //! [`core::ptr::addr_eq`]: core::ptr::addr_eq
-//! [`src/lib.rs` -> `tests_without_ndd` -> `addresses_unique_between_statics()`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L269
+//! [`src/lib.rs` -> `tests_without_ndd` -> `addresses_unique_between_statics()`]:
+//!     https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L269
 //! [`demo_bug/`]: https://github.com/peter-lyons-kehl/ndd/tree/main/demo_bug
 //! [`core::cell::Cell`]: core::cell::Cell
 //! [`core::marker::Sync`]: core::marker::Sync
 //! [`core::marker::Send`]: core::marker::Send
 //! [`std::sync::Mutex`]: std::sync::Mutex#impl-Sync-for-Mutex<T>
-//! [`src/lib.rs` -> `tests_with_ndd`]: https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L355
+//! [`src/lib.rs` -> `tests_with_ndd`]:
+//!     https://github.com/peter-lyons-kehl/ndd/blob/main/src/lib.rs#L355
 //! [`alloc`]: alloc
 //! [`core::ops::Drop`]: core::ops::Drop
 //! [`pre-commit`]: https://github.com/peter-lyons-kehl/ndd/blob/main/pre-commit
@@ -28,8 +31,10 @@
 //! [`demo_bug/non_lto`]: https://github.com/peter-lyons-kehl/ndd/tree/main/demo_bug/non_lto/
 //! [`demo_bug/fat_lto`]: https://github.com/peter-lyons-kehl/ndd/tree/main/demo_bug/fat_lto/
 //! [`demo_fix/fat_lto`]: https://github.com/peter-lyons-kehl/ndd/tree/main/demo_fix/fat_lto/
-//! [`non_dedup.sh`]: https://github.com/peter-lyons-kehl/ndd/blob/main/demo_shared_scripts//non_dedup.sh
-//! [`dedup_out.sh`]: https://github.com/peter-lyons-kehl/ndd/blob/main/demo_shared_scripts//dedup_out.sh
+//! [`non_dedup.sh`]:
+//!     https://github.com/peter-lyons-kehl/ndd/blob/main/demo_shared_scripts/non_dedup.sh
+//! [`dedup_out.sh`]:
+//!     https://github.com/peter-lyons-kehl/ndd/blob/main/demo_shared_scripts/dedup_out.sh
 //! [`liter_str`]: https://github.com/peter-lyons-kehl/ndd/blob/main/demo_shared_src/liter_str.rs
 //! [`const_str`]: https://github.com/peter-lyons-kehl/ndd/blob/main/demo_shared_src/const_str.rs
 //! [`const_opt`]: https://github.com/peter-lyons-kehl/ndd/blob/main/demo_shared_src/const_opt.rs
