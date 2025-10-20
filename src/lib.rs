@@ -59,12 +59,13 @@ use core::marker::PhantomData;
 /// than `'static`). This requirement gives an earlier error when `NonDeDuplicated` is used other
 /// than intended.
 ///
-/// We don't just limit to be `:'static`, because then `NonDeDuplicated` could still be somewhat
+/// We don't just limit `T` to be `:'static`, because then `NonDeDuplicated` could still be somewhat
 /// used with non-static lifetimes, and the error would surface only later. The following **would**
 /// compile:
 /// ```rust
 /// # use core::cell::Cell;
 ///
+/// #[repr(transparent)]
 /// pub struct NonDeDuplicatedStatic<T: 'static> {
 ///    cell: Cell<T>,
 ///}
@@ -75,7 +76,7 @@ use core::marker::PhantomData;
 /// ```
 /// Only the following would then fail (to compile):
 /// ```rust,ignore
-/// fn caller<'a>(r: &'a u8) { let u = 0u8; callee(NonDeDuplicatedStatic::new(uref)); }
+/// fn caller<'a>(r: &'a u8) { let u = 0u8; callee(NonDeDuplicatedStatic::new(&u)); }
 /// ```
 ///
 /// But, by requiring [NonDeDuplicatedFlexible]'s generic parameter `OWN` (or [NonDeDuplicated]'s
